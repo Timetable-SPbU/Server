@@ -7,13 +7,23 @@ let package = Package(
         // 💧 A server-side Swift web framework.
         .package(url: "https://github.com/vapor/vapor.git", from: "3.0.0-rc.2"),
 
-        // 🔵 Swift ORM (queries, models, relations, etc) built on SQLite 3.
-        .package(url: "https://github.com/vapor/fluent-sqlite.git", from: "3.0.0-rc.2")
+        // 🔵 Swift ORM (queries, models, relations, etc) built on PostgreSQL.
+        .package(url: "https://github.com/vapor/fluent-postgresql.git",
+                 from: "1.0.0-rc"),
+
+        .package(url: "../SPbUappModels", .branchItem("master"))
     ],
     targets: [
-        .target(name: "App", dependencies: ["FluentSQLite", "Vapor"]),
-        .target(name: "Run", dependencies: ["App"]),
-        .testTarget(name: "AppTests", dependencies: ["App"])
+        .target(name: "ServerCore",
+                dependencies: ["FluentPostgreSQL", "Vapor"]),
+        .target(name: "APIVersion1",
+                dependencies: ["ServerCore", "SPbUappModelsV1"]),
+        .target(name: "App",
+                dependencies: ["APIVersion1"]),
+        .target(name: "Run",
+                dependencies: ["App"]),
+        .testTarget(name: "AppTests",
+                    dependencies: ["App"])
     ]
 )
 
