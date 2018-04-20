@@ -8,6 +8,7 @@
 import Vapor
 import Routing
 import ServerCore
+import HTTP
 
 public struct Routes {
 
@@ -16,7 +17,10 @@ public struct Routes {
         let version = router.grouped("v1")
 
         let divisionsController = DivisionsController()
-
         version.get("divisions", use: divisionsController.allDivisions)
+
+        let studyLevelsController = StudyLevelsController()
+        version.get("division", Division.parameter,
+                    use: studyLevelsController.allStudyLevels)
     }
 }

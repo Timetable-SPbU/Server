@@ -2,6 +2,15 @@
   "object": {
     "pins": [
       {
+        "package": "CCurl",
+        "repositoryURL": "https://github.com/dmcyk/CCurl.git",
+        "state": {
+          "branch": null,
+          "revision": "30249c84f0d004008901bc6bf4c8bc1a4e57b6aa",
+          "version": "0.2.0"
+        }
+      },
+      {
         "package": "Console",
         "repositoryURL": "https://github.com/vapor/console.git",
         "state": {
@@ -15,8 +24,8 @@
         "repositoryURL": "https://github.com/vapor/core.git",
         "state": {
           "branch": null,
-          "revision": "ce64e70a48adf54835d040ba4c4dab431e2cd020",
-          "version": "3.1.1"
+          "revision": "c61a29ef08e7c8b3e836954269678c5a8fa31f3f",
+          "version": "3.1.2"
         }
       },
       {
@@ -38,15 +47,6 @@
         }
       },
       {
-        "package": "Engine",
-        "repositoryURL": "https://github.com/vapor/engine.git",
-        "state": {
-          "branch": null,
-          "revision": "bcc330e964a0a294afb9c829b6e6b4626cdea427",
-          "version": "3.0.0-rc.2.4"
-        }
-      },
-      {
         "package": "Fluent",
         "repositoryURL": "https://github.com/vapor/fluent.git",
         "state": {
@@ -62,6 +62,24 @@
           "branch": null,
           "revision": "495db9b9113cfbdf80377801c0f1cf7a95ebf05e",
           "version": "1.0.0-rc.2.1"
+        }
+      },
+      {
+        "package": "Hammond",
+        "repositoryURL": "https://github.com/broadwaylamb/Hammond.git",
+        "state": {
+          "branch": "master",
+          "revision": "69dd0fbaaded6a18a2beacc802f088440d6e37de",
+          "version": null
+        }
+      },
+      {
+        "package": "HTTP",
+        "repositoryURL": "https://github.com/vapor/http.git",
+        "state": {
+          "branch": null,
+          "revision": "2cb664097006e3fda625934079b51c90438947e1",
+          "version": "3.0.0"
         }
       },
       {
@@ -146,6 +164,15 @@
         }
       },
       {
+        "package": "SwiftyCurl",
+        "repositoryURL": "https://github.com/dmcyk/SwiftyCurl.git",
+        "state": {
+          "branch": null,
+          "revision": "a431b5ec0a04e98d8fbcb54b2d1d2dd19ed45ed5",
+          "version": "1.0.0"
+        }
+      },
+      {
         "package": "TemplateKit",
         "repositoryURL": "https://github.com/vapor/template-kit.git",
         "state": {
@@ -155,12 +182,21 @@
         }
       },
       {
+        "package": "TimetableSDK",
+        "repositoryURL": "https://github.com/Timetable-SPbU/TimetableSDK.git",
+        "state": {
+          "branch": "master",
+          "revision": "a54b41a42bc3214ae0b8fc70b367b22cf98196d3",
+          "version": null
+        }
+      },
+      {
         "package": "URLEncodedForm",
         "repositoryURL": "https://github.com/vapor/url-encoded-form.git",
         "state": {
           "branch": null,
-          "revision": "aca8efc7176f3ea2352dcbcd32526f82af5647c3",
-          "version": "1.0.1"
+          "revision": "8448fa943057c01220f6a940d3b1b8e9fd92a96e",
+          "version": "1.0.2"
         }
       },
       {
@@ -177,8 +213,17 @@
         "repositoryURL": "https://github.com/vapor/vapor.git",
         "state": {
           "branch": null,
-          "revision": "752e6a6c392f18e4986e2251c5db76fd7f79d4e9",
-          "version": "3.0.0-rc.2.5"
+          "revision": "95f94041400f54d0442d1dd5f12f91868d1a2a1c",
+          "version": "3.0.0-rc.2.6"
+        }
+      },
+      {
+        "package": "WebSocket",
+        "repositoryURL": "https://github.com/vapor/websocket.git",
+        "state": {
+          "branch": null,
+          "revision": "23acd21aa37a200faa2f5d5525c974efa6b5676c",
+          "version": "1.0.0"
         }
       }
     ]

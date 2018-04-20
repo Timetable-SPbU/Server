@@ -11,11 +11,14 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent-postgresql.git",
                  from: "1.0.0-rc"),
 
-        .package(url: "../SPbUappModels", .branchItem("master"))
+        .package(url: "../SPbUappModels", .branchItem("master")),
+        .package(url: "https://github.com/Timetable-SPbU/TimetableSDK.git",
+                 .branchItem("master"))
     ],
     targets: [
+        .target(name: "TimetableDump", dependencies: ["TimetableSDK", "Vapor"]),
         .target(name: "ServerCore",
-                dependencies: ["FluentPostgreSQL", "Vapor"]),
+                dependencies: ["FluentPostgreSQL", "Vapor", "TimetableDump"]),
         .target(name: "APIVersion1",
                 dependencies: ["ServerCore", "SPbUappModelsV1"]),
         .target(name: "App",

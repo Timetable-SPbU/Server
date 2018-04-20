@@ -10,40 +10,41 @@ import Vapor
 import Fluent
 import SPbUappModelsV1
 
+typealias DivisionViewModel = SPbUappModelsV1.Division
+
 final class DivisionsController {
 
     func allDivisions(
         _ request: Request
-    ) throws -> Future<[SPbUappModelsV1.Division]> {
+    ) throws -> Future<[DivisionViewModel]> {
 
         return Division.query(on: request).all()
-            .map(to: [SPbUappModelsV1.Division].self) { divisions in
+            .map(to: [DivisionViewModel].self) { divisions in
 
                 let language = request.preferredLanguage
 
-                return divisions.map { division in
+                return try divisions.map { division in
 
-                    let divisionID = DivisionID(rawValue: division.id!)
+                    let idRawValue = try division.requireID().rawValue
+                    let divisionID = DivisionID(rawValue: idRawValue)
 
                     switch language {
                     case .en:
-                        return SPbUappModelsV1
-                            .Division(id: divisionID,
-                                      divisionName: division
-                                        .facultyNameEnglish,
-                                      fieldOfStudy: division
-                                        .officialDivisionNameEnglish)
+                        return DivisionViewModel(
+                            id: divisionID,
+                            divisionName: division.divisionNameEnglish,
+                            fieldOfStudy: division.fieldOfStudyEnglish
+                        )
                     case .ru:
-                        return SPbUappModelsV1
-                            .Division(id: divisionID,
-                                      divisionName: division
-                                        .facultyName,
-                                      fieldOfStudy: division
-                                        .officialDivisionName)
+                        return DivisionViewModel(
+                            id: divisionID,
+                            divisionName: division.divisionName,
+                            fieldOfStudy: division.fieldOfStudy
+                        )
                     }
                 }
             }
     }
 }
 
-extension SPbUappModelsV1.Division: Content {}
+extension DivisionViewModel: Content {}

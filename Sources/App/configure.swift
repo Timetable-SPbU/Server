@@ -29,5 +29,7 @@ public func configure(
 
     var migrations = MigrationConfig()
     migrations.add(model: Division.self, database: .psql)
+    migrations.add(model: StudyLevel.self, database: .psql)
+    migrations.add(model: DivisionStudyLevel.self, database: .psql)
     services.register(migrations)
 }
