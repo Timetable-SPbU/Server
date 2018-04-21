@@ -13,7 +13,7 @@ public func configure(
 
     /// Register routes to the router
     let router = EngineRouter.default()
-    try routes(router)
+    try routes(router, environment: env)
     services.register(router, as: Router.self)
 
     let databaseProvider = FluentPostgreSQLProvider()
@@ -32,4 +32,7 @@ public func configure(
     migrations.add(model: StudyLevel.self, database: .psql)
     migrations.add(model: DivisionStudyLevel.self, database: .psql)
     services.register(migrations)
+
+    let commandConfig = CommandConfig.default()
+    services.register(commandConfig)
 }

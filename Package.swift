@@ -16,9 +16,11 @@ let package = Package(
                  .branchItem("master"))
     ],
     targets: [
-        .target(name: "TimetableDump", dependencies: ["TimetableSDK", "Vapor"]),
         .target(name: "ServerCore",
-                dependencies: ["FluentPostgreSQL", "Vapor", "TimetableDump"]),
+                dependencies: ["FluentPostgreSQL",
+                               "Vapor",
+                               "TimetableSDK",
+                               "SPbUappModelsV1"]),
         .target(name: "APIVersion1",
                 dependencies: ["ServerCore", "SPbUappModelsV1"]),
         .target(name: "App",

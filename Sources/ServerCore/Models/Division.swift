@@ -8,6 +8,9 @@
 import FluentPostgreSQL
 import Fluent
 import Vapor
+import DatabaseKit
+import PostgreSQL
+import SPbUappModelsV1
 
 public final class Division: PostgreSQLModel, Migration {
 
@@ -23,6 +26,8 @@ public final class Division: PostgreSQLModel, Migration {
 
     public var code: String
 
+    public var type: DivisionType
+
     public var studyLevels: Siblings<Division, StudyLevel, DivisionStudyLevel> {
         return siblings()
     }
@@ -31,12 +36,14 @@ public final class Division: PostgreSQLModel, Migration {
                 fieldOfStudy: String,
                 divisionNameEnglish: String,
                 fieldOfStudyEnglish: String,
-                code: String) {
+                code: String,
+                type: DivisionType = .faculty) {
         self.divisionName = divisionName
         self.fieldOfStudy = fieldOfStudy
         self.divisionNameEnglish = divisionNameEnglish
         self.fieldOfStudyEnglish = fieldOfStudyEnglish
         self.code = code
+        self.type = type
     }
 }
 

@@ -19,8 +19,7 @@ public struct Routes {
         let divisionsController = DivisionsController()
         version.get("divisions", use: divisionsController.allDivisions)
 
-        let studyLevelsController = StudyLevelsController()
-        version.get("division", Division.parameter,
-                    use: studyLevelsController.allStudyLevels)
+        version.get("divisions", Division.parameter,
+                    use: divisionsController.allStudyLevels)
     }
 }

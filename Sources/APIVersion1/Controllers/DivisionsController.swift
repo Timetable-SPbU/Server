@@ -18,8 +18,9 @@ final class DivisionsController {
         _ request: Request
     ) throws -> Future<[DivisionViewModel]> {
 
-        return Division.query(on: request).all()
-            .map(to: [DivisionViewModel].self) { divisions in
+        return Future.flatMap(on: request) {
+                try Division.query(on: request).sort(\.id, .ascending).all()
+            }.map(to: [DivisionViewModel].self) { divisions in
 
                 let language = request.preferredLanguage
 
@@ -33,17 +34,30 @@ final class DivisionsController {
                         return DivisionViewModel(
                             id: divisionID,
                             divisionName: division.divisionNameEnglish,
-                            fieldOfStudy: division.fieldOfStudyEnglish
+                            fieldOfStudy: division.fieldOfStudyEnglish,
+                            type: division.type
                         )
                     case .ru:
                         return DivisionViewModel(
                             id: divisionID,
                             divisionName: division.divisionName,
-                            fieldOfStudy: division.fieldOfStudy
+                            fieldOfStudy: division.fieldOfStudy,
+                            type: division.type
                         )
                     }
                 }
             }
+    }
+
+    func allStudyLevels(for request: Request) throws -> Future<String> {
+
+        let tmp = try request
+            .parameter(Division.self)
+            .flatMap(to: [StudyLevel].self) { division in
+                try division.studyLevels.query(on: request).all()
+        }
+
+        fatalError()
     }
 }
 

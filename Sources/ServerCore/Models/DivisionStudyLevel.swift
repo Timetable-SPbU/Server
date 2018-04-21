@@ -6,8 +6,11 @@
 //
 
 import Fluent
+import FluentPostgreSQL
+import PostgreSQL
 
-public final class DivisionStudyLevel: PostgreSQLPivot, Migration {
+public final class DivisionStudyLevel:
+    PostgreSQLPivot, ModifiablePivot, Migration {
 
     public typealias Left = Division
 
@@ -23,9 +26,8 @@ public final class DivisionStudyLevel: PostgreSQLPivot, Migration {
 
     public static var rightIDKey: RightIDKey { return \.studyLevelID }
 
-    public init(divisionID: Identifier<Division>,
-                studyLevelID: Identifier<StudyLevel>) {
-        self.divisionID = divisionID
-        self.studyLevelID = studyLevelID
+    public init(_ left: Division, _ right: StudyLevel) throws {
+        self.divisionID = try left.requireID()
+        self.studyLevelID = try right.requireID()
     }
 }

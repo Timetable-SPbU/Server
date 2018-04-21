@@ -8,6 +8,7 @@
 import FluentPostgreSQL
 import Fluent
 import Vapor
+import SPbUappModelsV1
 
 public final class StudyLevel: PostgreSQLModel, Migration {
 
@@ -19,15 +20,19 @@ public final class StudyLevel: PostgreSQLModel, Migration {
 
     public var timetableName: String
 
+    public var divisionTypes: Set<DivisionType>
+
     var divisions: Siblings<StudyLevel, Division, DivisionStudyLevel> {
         return siblings()
     }
 
     public init(name: String,
                 nameEnglish: String?,
-                timetableName: String) {
+                timetableName: String,
+                divisionTypes: Set<DivisionType> = []) {
         self.name = name
         self.nameEnglish = nameEnglish
         self.timetableName = timetableName
+        self.divisionTypes = divisionTypes
     }
 }
