@@ -15,15 +15,18 @@ extension Siblings
 
     /// Returns `true` if the model was attached to the relation.
     func attachIfNeeded(_ model: Related,
-                        on conn: DatabaseConnectable) -> Future<Bool> {
+                        on conn: DatabaseConnectable) -> Future<Through> {
 
-        return isAttached(model, on: conn)
-            .flatMap(to: Bool.self) { isAttached in
-                if !isAttached {
-                    return self.attach(model, on: conn).transform(to: true)
-                } else {
-                    return conn.eventLoop.newSucceededFuture(result: false)
-                }
+        return Future.flatMap(on: conn) { () -> Future<Through?> in
+            try self.pivots(on: conn)
+                .filter(Through.rightIDKey == model[keyPath: Related.idKey])
+                .first()
+        }.flatMap(to: Through.self) { pivot in
+            if let pivot = pivot {
+                return conn.eventLoop.newSucceededFuture(result: pivot)
+            } else {
+                return self.attach(model, on: conn)
             }
+        }
     }
 }

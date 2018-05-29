@@ -20,9 +20,8 @@ public func configure(
     try services.register(databaseProvider)
 
     let databaseConfig = PostgreSQLDatabaseConfig(hostname: "localhost",
-                                                  port: 5432,
                                                   username: "sergej",
-                                                  database: "Timetable",
+                                                  database: "TimetableTest",
                                                   password: nil)
 
     services.register(databaseConfig)
@@ -31,8 +30,11 @@ public func configure(
     migrations.add(model: Division.self, database: .psql)
     migrations.add(model: StudyLevel.self, database: .psql)
     migrations.add(model: DivisionStudyLevel.self, database: .psql)
+    migrations.add(model: AdmissionYear.self, database: .psql)
+    migrations.add(model: Specialization.self, database: .psql)
     services.register(migrations)
 
-    let commandConfig = CommandConfig.default()
+    var commandConfig = CommandConfig.default()
+    commandConfig.useFluentCommands()
     services.register(commandConfig)
 }

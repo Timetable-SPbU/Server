@@ -30,7 +30,7 @@ extension PostgreSQLModel where Self.ID == Identifier<Self>  {
             .simpleQuery("SELECT LASTVAL();")
             .map(to: Self.self) { row in
                 var model = self
-                let intID = try row[0]
+                let intID = try row.first?
                     .firstValue(forColumn: "lastval")?
                     .decode(Int.self)
 
@@ -40,7 +40,52 @@ extension PostgreSQLModel where Self.ID == Identifier<Self>  {
     }
 }
 
-public protocol PostgreSQLPivot: Pivot, PostgreSQLModel { }
+extension PostgreSQLModel {
+    
+    private static func _setCustomType<T>(
+        for column: KeyPath<Self, T>,
+        typeName: String,
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        
+        return Future.flatMap(on: connection) { () -> Future<Void> in
+            
+            let columnName = try column.makeQueryField().name
+            
+            let alterColumnType = """
+            ALTER TABLE "\(entity)"
+            ALTER COLUMN "\(columnName)" TYPE \(typeName)
+            USING "\(columnName)"::\(typeName);
+            """
+            
+            return connection.simpleQuery(alterColumnType).transform(to: ())
+        }
+    }
+    
+    /// Alters the column to set a custom type.
+    static func setCustomType<T: PostgreSQLType>(
+        for column: KeyPath<Self, T>,
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        return _setCustomType(for: column,
+                              typeName: "\"\(T.self)\"",
+                              on: connection)
+    }
+    
+    // Alters the column to set a custom array type.
+    static func setCustomType<T: PostgreSQLArrayType>(
+        for column: KeyPath<Self, T>,
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        return _setCustomType(
+            for: column,
+            typeName: "\"\(T.PostgreSQLArrayElement.self)\"[]",
+            on: connection
+        )
+    }
+}
+
+public protocol PostgreSQLPivot: Pivot, PostgreSQLModel {}
 
 extension PostgreSQLPivot {
 
@@ -53,7 +98,7 @@ extension PostgreSQLPivot {
         }.flatMap(to: Void.self) {
 
             let query = try """
-            ALTER TABLE "\(name)"
+            ALTER TABLE "\(entity)"
                 ADD CONSTRAINT "relation_uniqueness"
                 UNIQUE("\(leftIDKey.makeQueryField().name)", \
                        "\(rightIDKey.makeQueryField().name)");

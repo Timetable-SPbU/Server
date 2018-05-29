@@ -5,9 +5,9 @@
 //  Created by Sergej Jaskiewicz on 21/04/2018.
 //
 
-import PostgreSQL
+import FluentPostgreSQL
 
-extension Set: PostgreSQLArrayCustomConvertible {
+extension Set: PostgreSQLArrayType {
 
     /// See `PostgreSQLArrayCustomConvertible.postgreSQLDataArrayType`
     public static var postgreSQLDataArrayType: PostgreSQLDataType {
@@ -16,7 +16,7 @@ extension Set: PostgreSQLArrayCustomConvertible {
 
     /// See `PostgreSQLDataCustomConvertible.postgreSQLDataType`
     public static var postgreSQLDataType: PostgreSQLDataType {
-        return requirePostgreSQLDataCustomConvertible(Element.self)
+        return forceCast(Element.self)
             .postgreSQLDataArrayType
     }
 
@@ -36,10 +36,23 @@ extension Set: PostgreSQLArrayCustomConvertible {
     }
 }
 
-// Dynamic casting for conditional conformances must be supported in Swift 5
-#if swift(>=5)
+extension Set: ReflectionDecodable {
+    /// See `ReflectionDecodable.reflectDecoded()` for more information.
+    public static func reflectDecoded() throws -> (Set<Element>, Set<Element>) {
+        let reflected = try forceCast(Element.self).anyReflectDecoded()
+        return ([reflected.0 as! Element], [reflected.1 as! Element])
+    }
+    
+    /// See `ReflectionDecodable.reflectDecodedIsLeft(_:)` for more information.
+    public static func reflectDecodedIsLeft(_ item: Set<Element>) throws -> Bool {
+        return try forceCast(Element.self).anyReflectDecodedIsLeft(item.first!)
+    }
+}
+
+// Dynamic casting for conditional conformances must be supported in Swift 4.2
+#if swift(>=4.2)
 #else
-func requirePostgreSQLDataCustomConvertible<T>(
+func forceCast<T>(
     _ type: T.Type
 ) -> PostgreSQLDataConvertible.Type {
     guard let custom = T.self as? PostgreSQLDataConvertible.Type else {
@@ -48,5 +61,18 @@ func requirePostgreSQLDataCustomConvertible<T>(
         )
     }
     return custom
+}
+
+func forceCast<T>(_ type: T.Type) throws -> AnyReflectionDecodable.Type {
+    guard let casted = T.self as? AnyReflectionDecodable.Type else {
+        throw CoreError(
+            identifier: "ReflectionDecodable",
+            reason: "\(T.self) is not `ReflectionDecodable`",
+            suggestedFixes: [
+                "Conform `\(T.self)` to `ReflectionDecodable`."
+            ]
+        )
+    }
+    return casted
 }
 #endif

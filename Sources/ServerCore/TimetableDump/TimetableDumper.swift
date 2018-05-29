@@ -49,73 +49,107 @@ public final class TimetableDumper {
 
         return perform(request).flatMap(to: Void.self) { studyLevels in
             studyLevels.serialFutureMap(on: self.database) {
-                self.saveStudyLevel(studyLevel: $0, division: division)
+                self.saveStudyLevel(timetableStudyLevel: $0, division: division)
             }
         }
     }
 
     private func saveStudyLevel(
-        studyLevel: TimetableSDK.StudyLevel,
+        timetableStudyLevel: TimetableSDK.StudyLevel,
         division: Division
     ) -> Future<Void> {
 
-        guard let name = studyLevel.name else {
+        guard let name = timetableStudyLevel.name else {
             // Don't process the study levels that don't have names — it doesn't
             // make sence.
             return database.eventLoop.newSucceededFuture(result: ())
         }
 
-        let studyLevelModel = StudyLevel(name: name,
-                                         nameEnglish: studyLevel.englishName,
-                                         timetableName: name)
+        let studyLevel = StudyLevel(
+            name: name,
+            nameEnglish: timetableStudyLevel.englishName,
+            timetableName: name
+        )
 
         self.logger.debug("""
-        Fetched study level "\(studyLevelModel.name)". Saving…
+        Fetched study level "\(studyLevel.name)". Saving…
         """)
 
-        return Future
-            .flatMap(on: database) { () -> Future<StudyLevel?> in
-                try StudyLevel.query(on: self.database)
-                    .filter(\.timetableName == studyLevelModel.name)
-                    .first()
-            }.flatMap(to: StudyLevel.self) { studyLevel in
-                if let studyLevel = studyLevel {
+        return Future.flatMap(on: database) {
+            try studyLevel.saveIfNeeded(
+                on: self.database,
+                conditions: \.timetableName == studyLevel.timetableName
+            )
+        }.flatMap(to: Void.self) { studyLevel in
 
-                    self.logger.debug("""
-                    Study level "\(studyLevel.name)" already exists.
-                    """)
+            self.logger.debug("""
+                Creating connection between study level \
+                "\(studyLevel.name)" and \
+                division "\(division.divisionName)"
+                """)
 
-                    return self.database
-                        .eventLoop
-                        .newSucceededFuture(result: studyLevel)
-                } else {
-
-                    self.logger.debug("""
-                    Creating study level "\(studyLevelModel.name)"…
-                    """)
-
-                    return studyLevelModel.save(on: self.database)
+            if studyLevel.divisionTypes.isEmpty ||
+                studyLevel.divisionTypes.contains(division.type) {
+                return division
+                    .studyLevels
+                    .attachIfNeeded(studyLevel, on: self.database)
+                    .flatMap(to: Void.self) { divisionStudyLevel in
+                        self.saveAdmissionYearsWithSpecializations(
+                            divisionStudyLevel: divisionStudyLevel,
+                            programs: timetableStudyLevel.programs
+                        )
                 }
-            }.flatMap(to: Bool.self) { studyLevel in
-
-                self.logger.debug("""
-                    Creating connection betweem study level \
-                    "\(studyLevelModel.name)" and \
-                    division "\(division.divisionName)"
-                    """)
-
-                if studyLevel.divisionTypes.isEmpty ||
-                   studyLevel.divisionTypes.contains(division.type) {
-                    return division
-                        .studyLevels
-                        .attachIfNeeded(studyLevel, on: self.database)
-                } else {
-                    return self.database
-                        .eventLoop
-                        .newSucceededFuture(result: false)
-                }
-            }.transform(to: ())
+            } else {
+                return self.database
+                    .eventLoop
+                    .newSucceededFuture(result: ())
+            }
+        }
     }
+
+    private func saveAdmissionYearsWithSpecializations(
+        divisionStudyLevel: DivisionStudyLevel,
+        programs: [TimetableSDK.StudyLevel.Program]
+    ) -> Future<Void> {
+
+        return programs
+            .serialFutureMap(on: database) { program -> Future<Void> in
+
+                let db = self.database
+
+                return program.admissionYears
+                    .serialFutureMap(on: db) { year -> Future<Void> in
+
+                        guard let yearNumber = year.number else {
+                            return db.eventLoop
+                                .newSucceededFuture(result: ())
+                        }
+
+                        return Future
+                            .flatMap(on: db) { () -> Future<AdmissionYear> in
+
+                                let linkID = try divisionStudyLevel.requireID()
+
+                                let admissionYearModel = AdmissionYear(
+                                    number: yearNumber,
+                                    divisionStudyLevelLinkID: linkID
+                                )
+
+                                return try admissionYearModel.saveIfNeeded(
+                                    on: db,
+                                    conditions:
+                                        \.number == yearNumber,
+                                        \.divisionStudyLevelLinkID ==
+                                            divisionStudyLevel.id
+                                )
+                            }.transform(to: ())
+                    }
+            }
+    }
+
+//    private func saveSpecialization(<#parameters#>) -> <#return type#> {
+//        <#function body#>
+//    }
 
     // MARK: - Perfroming requests
 

@@ -51,8 +51,8 @@ final class DivisionsController {
 
     func allStudyLevels(for request: Request) throws -> Future<String> {
 
-        let tmp = try request
-            .parameter(Division.self)
+        let tmp = try request.parameters
+            .next(Division.self)
             .flatMap(to: [StudyLevel].self) { division in
                 try division.studyLevels.query(on: request).all()
         }

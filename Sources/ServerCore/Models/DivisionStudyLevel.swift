@@ -30,4 +30,8 @@ public final class DivisionStudyLevel:
         self.divisionID = try left.requireID()
         self.studyLevelID = try right.requireID()
     }
+
+    public var admissionYears: Children<DivisionStudyLevel, AdmissionYear> {
+        return children(\.divisionStudyLevelLinkID)
+    }
 }

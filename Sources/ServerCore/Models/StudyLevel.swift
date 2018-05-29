@@ -10,7 +10,7 @@ import Fluent
 import Vapor
 import SPbUappModelsV1
 
-public final class StudyLevel: PostgreSQLModel, Migration {
+public final class StudyLevel: PostgreSQLModel {
 
     public var id: Identifier<StudyLevel>?
 
@@ -34,5 +34,21 @@ public final class StudyLevel: PostgreSQLModel, Migration {
         self.nameEnglish = nameEnglish
         self.timetableName = timetableName
         self.divisionTypes = divisionTypes
+    }
+}
+
+extension StudyLevel: Migration {
+    
+    /// Runs this migration's changes on the database.
+    /// This is usually creating a table, or altering an existing one.
+    public static func prepare(
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        
+        return Database.create(self, on: connection) { builder in
+            try addProperties(to: builder)
+        }.flatMap(to: Void.self) {
+            setCustomType(for: \.divisionTypes, on: connection)
+        }
     }
 }
