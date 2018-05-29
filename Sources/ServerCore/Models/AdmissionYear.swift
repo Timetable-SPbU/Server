@@ -18,9 +18,9 @@ public final class AdmissionYear: PostgreSQLModel {
     public var divisionStudyLevelID: Identifier<DivisionStudyLevel>
 
     public init(number: Int,
-                divisionStudyLevelLinkID: Identifier<DivisionStudyLevel>) {
+                divisionStudyLevelID: Identifier<DivisionStudyLevel>) {
         self.number = number
-        self.divisionStudyLevelID = divisionStudyLevelLinkID
+        self.divisionStudyLevelID = divisionStudyLevelID
     }
 
     public var parent: Parent<AdmissionYear, DivisionStudyLevel> {

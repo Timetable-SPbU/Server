@@ -132,7 +132,7 @@ public final class TimetableDumper {
 
                                 let admissionYearModel = AdmissionYear(
                                     number: yearNumber,
-                                    divisionStudyLevelLinkID: linkID
+                                    divisionStudyLevelID: linkID
                                 )
 
                                 return try admissionYearModel.saveIfNeeded(

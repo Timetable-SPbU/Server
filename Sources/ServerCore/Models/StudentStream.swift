@@ -9,8 +9,7 @@ import Fluent
 import FluentPostgreSQL
 import PostgreSQL
 
-public final class StudentStream:
-    PostgreSQLPivot, ModifiablePivot, Migration {
+public final class StudentStream: PostgreSQLPivot, ModifiablePivot, Migration {
 
     public typealias Left = AdmissionYear
 

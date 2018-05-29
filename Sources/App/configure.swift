@@ -34,6 +34,7 @@ public func configure(
     migrations.add(model: DivisionStudyLevel.self, database: .psql)
     migrations.add(model: AdmissionYear.self, database: .psql)
     migrations.add(model: Specialization.self, database: .psql)
+    migrations.add(model: StudentStream.self, database: .psql)
     services.register(migrations)
 
     var commandConfig = CommandConfig.default()
