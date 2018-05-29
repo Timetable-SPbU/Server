@@ -6,45 +6,7 @@
 //
 
 import FluentPostgreSQL
-import SPbUappModelsV1
-
-extension DivisionType {
-    
-    static func createType(
-        on connection: PostgreSQLConnection
-    ) -> Future<Void> {
-        
-        let cases = allCases
-            .map { "'\($0.rawValue)'" }
-            .joined(separator: ", ")
-        
-        let query = """
-        CREATE TYPE "\(self)" AS ENUM (\(cases));
-        
-        -- Allow implicit casting from TEXT to \(self)
-        CREATE OR REPLACE FUNCTION "text2\(self)"(TEXT)
-            RETURNS "\(self)" AS $$
-                SELECT $1::"\(self)";
-            $$ LANGUAGE SQL IMMUTABLE;
-        
-        CREATE CAST (TEXT AS "\(self)")
-            WITH FUNCTION "text2\(self)"(TEXT) AS IMPLICIT;
-        """
-        
-        return connection.simpleQuery(query).transform(to: ())
-    }
-    
-    static func dropType(on connection: PostgreSQLConnection) -> Future<Void> {
-        
-        let query = """
-        DROP CAST IF EXISTS(TEXT AS "\(self)");
-        DROP FUNCTION IF EXISTS "text2\(self)"(TEXT);
-        DROP TYPE IF EXISTS "\(self)";
-        """
-        
-        return connection.simpleQuery(query).transform(to: ())
-    }
-}
+@_exported import SPbUappModelsV1
 
 extension DivisionType: PostgreSQLEnumType {
     
@@ -80,5 +42,47 @@ extension DivisionType: PostgreSQLEnumType {
         }
 
         return type
+    }
+}
+
+extension DivisionType: Migration {
+    
+    public typealias Database = PostgreSQLDatabase
+    
+    public static func prepare(
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        
+        let cases = allCases
+            .map { "'\($0.rawValue)'" }
+            .joined(separator: ", ")
+        
+        let query = """
+        CREATE TYPE "\(self)" AS ENUM (\(cases));
+        
+        -- Allow implicit casting from TEXT to \(self)
+        CREATE OR REPLACE FUNCTION "text2\(self)"(TEXT)
+        RETURNS "\(self)" AS $$
+        SELECT $1::"\(self)";
+        $$ LANGUAGE SQL IMMUTABLE;
+        
+        CREATE CAST (TEXT AS "\(self)")
+        WITH FUNCTION "text2\(self)"(TEXT) AS IMPLICIT;
+        """
+        
+        return connection.simpleQuery(query).transform(to: ())
+    }
+    
+    public static func revert(
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        
+        let query = """
+        DROP CAST IF EXISTS(TEXT AS "\(self)");
+        DROP FUNCTION IF EXISTS "text2\(self)"(TEXT);
+        DROP TYPE IF EXISTS "\(self)";
+        """
+        
+        return connection.simpleQuery(query).transform(to: ())
     }
 }

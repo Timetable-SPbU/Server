@@ -55,32 +55,15 @@ extension Division: Migration {
         on connection: PostgreSQLConnection
     ) -> Future<Void> {
         
-        return DivisionType.createType(on: connection)
-            .flatMap(to: Void.self) { _ in
-                Database.create(self, on: connection) { builder in
-                    try addProperties(to: builder)
-                }
-            }.flatMap(to: Void.self) {
-                
-                // Fluent cannot (yet?) assign a custom type to columns, so we
-                // need to do it manually.
-                
-                return setCustomType(for: \.type, on: connection)
-            }
-    }
-    
-    /// Reverts this migration's changes on the database.
-    /// This is usually dropping a created table. If it is not possible
-    /// to revert the changes from this migration, complete the future
-    /// with an error.
-    public static func revert(
-        on connection: Database.Connection
-    ) -> Future<Void> {
-        
-        return Database.delete(self, on: connection)
-            .flatMap(to: Void.self) {
-                DivisionType.dropType(on: connection)
-            }
+        return Database.create(self, on: connection) { builder in
+            try addProperties(to: builder)
+        }.flatMap(to: Void.self) {
+            
+            // Fluent cannot (yet?) assign a custom type to columns, so we
+            // need to do it manually.
+            
+            return setCustomType(for: \.type, on: connection)
+        }
     }
 }
 
