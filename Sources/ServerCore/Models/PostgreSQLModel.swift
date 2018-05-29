@@ -83,6 +83,28 @@ extension PostgreSQLModel {
             on: connection
         )
     }
+    
+    static func uniqueConstraint(
+        _ keyPaths: PartialKeyPath<Self>...,
+        on connection: PostgreSQLConnection
+    ) -> Future<Void> {
+        
+        return Future.flatMap(on: connection) { () -> Future<Void> in
+            
+            let columns = try keyPaths
+                .map { try $0.makeQueryFieldPartial().name }
+            
+            let constraintName = columns.joined(separator: "_") + "_UNIQUE"
+            let list = columns.map { "\"\($0)\"" }.joined(separator: ", ")
+            
+            let query = """
+            ALTER TABLE "\(entity)"
+                ADD CONSTRAINT "\(constraintName)" UNIQUE(\(list));
+            """
+            
+            return connection.simpleQuery(query).transform(to: ())
+        }
+    }
 }
 
 public protocol PostgreSQLPivot: Pivot, PostgreSQLModel {}
@@ -96,15 +118,7 @@ extension PostgreSQLPivot {
         return Database.create(self, on: connection) { builder in
             try addProperties(to: builder)
         }.flatMap(to: Void.self) {
-
-            let query = try """
-            ALTER TABLE "\(entity)"
-                ADD CONSTRAINT "relation_uniqueness"
-                UNIQUE("\(leftIDKey.makeQueryField().name)", \
-                       "\(rightIDKey.makeQueryField().name)");
-            """
-
-            return connection.simpleQuery(query).transform(to: ())
+            uniqueConstraint(leftIDKey, rightIDKey, on: connection)
         }
     }
 

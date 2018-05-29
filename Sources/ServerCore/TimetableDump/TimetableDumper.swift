@@ -139,7 +139,7 @@ public final class TimetableDumper {
                                     on: db,
                                     conditions:
                                         \.number == yearNumber,
-                                        \.divisionStudyLevelLinkID ==
+                                        \.divisionStudyLevelID ==
                                             divisionStudyLevel.id
                                 )
                             }.transform(to: ())

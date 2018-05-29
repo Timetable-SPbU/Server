@@ -9,8 +9,7 @@ import Fluent
 import FluentPostgreSQL
 import PostgreSQL
 
-public final class DivisionStudyLevel:
-    PostgreSQLPivot, ModifiablePivot, Migration {
+public final class DivisionStudyLevel: PostgreSQLPivot, ModifiablePivot {
 
     public typealias Left = Division
 
@@ -32,6 +31,26 @@ public final class DivisionStudyLevel:
     }
 
     public var admissionYears: Children<DivisionStudyLevel, AdmissionYear> {
-        return children(\.divisionStudyLevelLinkID)
+        return children(\.divisionStudyLevelID)
+    }
+}
+
+extension DivisionStudyLevel: Migration {
+    
+    /// Runs this migration's changes on the database.
+    /// This is usually creating a table, or altering an existing one.
+    public static func prepare(
+        on connection: Database.Connection
+    ) -> Future<Void> {
+        
+        return Database.create(self, on: connection) { builder in
+            try addProperties(to: builder)
+            try builder.addReference(from: \.divisionID,
+                                     to: \Division.id,
+                                     actions: .update)
+            try builder.addReference(from: \.studyLevelID,
+                                     to: \StudyLevel.id,
+                                     actions: .update)
+        }
     }
 }

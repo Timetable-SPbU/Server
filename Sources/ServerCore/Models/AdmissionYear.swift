@@ -15,16 +15,16 @@ public final class AdmissionYear: PostgreSQLModel {
 
     public var number: Int
 
-    public var divisionStudyLevelLinkID: Identifier<DivisionStudyLevel>
+    public var divisionStudyLevelID: Identifier<DivisionStudyLevel>
 
     public init(number: Int,
                 divisionStudyLevelLinkID: Identifier<DivisionStudyLevel>) {
         self.number = number
-        self.divisionStudyLevelLinkID = divisionStudyLevelLinkID
+        self.divisionStudyLevelID = divisionStudyLevelLinkID
     }
 
     public var parent: Parent<AdmissionYear, DivisionStudyLevel> {
-        return parent(\.divisionStudyLevelLinkID)
+        return parent(\.divisionStudyLevelID)
     }
 }
 
@@ -35,27 +35,13 @@ extension AdmissionYear: Migration {
     ) -> Future<Void> {
         return Database.create(self, on: connection) { builder in
             try addProperties(to: builder)
-            try builder.addReference(from: \.divisionStudyLevelLinkID,
-                                     to: \DivisionStudyLevel.id)
+            try builder.addReference(from: \.divisionStudyLevelID,
+                                     to: \DivisionStudyLevel.id,
+                                     actions: .update)
         }.flatMap(to: Void.self) {
-
-            let numberColumnName = try (\AdmissionYear.number)
-                .makeQueryField()
-                .name
-
-            let divisionStudyLevelLinkIDColumnName =
-                try (\AdmissionYear.divisionStudyLevelLinkID)
-                    .makeQueryField()
-                    .name
-
-            let query = """
-            ALTER TABLE "\(entity)"
-                ADD CONSTRAINT "year_uniqueness"
-                UNIQUE("\(numberColumnName)", \
-                "\(divisionStudyLevelLinkIDColumnName)");
-            """
-
-            return connection.simpleQuery(query).transform(to: ())
+            uniqueConstraint(\AdmissionYear.number,
+                             \AdmissionYear.divisionStudyLevelID,
+                             on: connection)
         }
     }
 }
