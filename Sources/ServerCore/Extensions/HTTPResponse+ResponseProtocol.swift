@@ -10,11 +10,11 @@ import Hammond
 
 extension HTTPResponse: ResponseProtocol {
 
-    public var statusCode: HTTPStatusCode {
-        return HTTPStatusCode(rawValue: Int(status.code))
-    }
+  public var statusCode: HTTPStatusCode {
+    return HTTPStatusCode(rawValue: Int(status.code))
+  }
 
-    public var data: Data {
-        return body.data ?? Data()
-    }
+  public var data: Data {
+    return body.data ?? Data()
+  }
 }

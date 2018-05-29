@@ -9,59 +9,59 @@ import Async
 
 extension Sequence {
 
-    private func _parallelFutureMap<U>(
-        on worker: Worker,
-        _ transform: @escaping (Element) -> Future<U>
-    ) -> Future<[U]> {
-        return map(transform).flatten(on: worker)
+  private func _parallelFutureMap<U>(
+    on worker: Worker,
+    _ transform: @escaping (Element) -> Future<U>
+  ) -> Future<[U]> {
+    return map(transform).flatten(on: worker)
+  }
+
+  func parallelFutureMap<U>(
+    on worker: Worker,
+    _ transform: @escaping (Element) -> Future<U>
+  ) -> Future<[U]> {
+    return parallelFutureMap(on: worker, transform)
+  }
+
+  func parallelFutureMap(
+    on worker: Worker,
+    _ transform: @escaping (Element) -> Future<Void>
+  ) -> Future<Void> {
+    return _parallelFutureMap(on: worker, transform).transform(to: ())
+  }
+
+  private func _serialFutureMap<U>(
+    on worker: Worker,
+    _ transform: @escaping (Element) -> Future<U>
+  ) -> Future<[U]> {
+
+    var future = worker.eventLoop.newSucceededFuture(result: ())
+
+    var transformed = [U]()
+
+    for element in self {
+
+      future = future.then {
+        transform(element)
+      }.map {
+        transformed.append($0)
+      }
     }
 
-    func parallelFutureMap<U>(
-        on worker: Worker,
-        _ transform: @escaping (Element) -> Future<U>
-        ) -> Future<[U]> {
-        return parallelFutureMap(on: worker, transform)
-    }
+    return future.map { transformed }
+  }
 
-    func parallelFutureMap(
-        on worker: Worker,
-        _ transform: @escaping (Element) -> Future<Void>
-    ) -> Future<Void> {
-        return _parallelFutureMap(on: worker, transform).transform(to: ())
-    }
+  func serialFutureMap<U>(
+    on worker: Worker,
+    _ transform: @escaping (Element) -> Future<U>
+  ) -> Future<[U]> {
+    return _serialFutureMap(on: worker, transform)
+  }
 
-    private func _serialFutureMap<U>(
-        on worker: Worker,
-        _ transform: @escaping (Element) -> Future<U>
-    ) -> Future<[U]> {
-
-        var future = worker.eventLoop.newSucceededFuture(result: ())
-
-        var transformed = [U]()
-
-        for element in self {
-
-            future = future.then {
-                transform(element)
-            }.map {
-                transformed.append($0)
-            }
-        }
-
-        return future.map { transformed }
-    }
-
-    func serialFutureMap<U>(
-        on worker: Worker,
-        _ transform: @escaping (Element) -> Future<U>
-    ) -> Future<[U]> {
-        return _serialFutureMap(on: worker, transform)
-    }
-
-    func serialFutureMap(
-        on worker: Worker,
-        _ transform: @escaping (Element) -> Future<Void>
-    ) -> Future<Void> {
-        return _serialFutureMap(on: worker, transform).transform(to: ())
-    }
+  func serialFutureMap(
+    on worker: Worker,
+    _ transform: @escaping (Element) -> Future<Void>
+  ) -> Future<Void> {
+    return _serialFutureMap(on: worker, transform).transform(to: ())
+  }
 }

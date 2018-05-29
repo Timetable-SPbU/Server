@@ -11,9 +11,9 @@ import PostgreSQL
 
 public final class StudentGroup: PostgreSQLModel {
 
-    public var id: Identifier<StudentGroup>?
+  public var id: Identifier<StudentGroup>?
 
-    
+
 }
 
 extension StudentGroup: Migration {

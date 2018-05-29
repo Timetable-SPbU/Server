@@ -9,8 +9,8 @@ import Foundation
 import HTTP
 import Vapor
 
-extension URLComponents: HTTP.URLRepresentable {
-    public func convertToURL() -> URL? {
-        return url
-    }
+extension URLComponents: URLRepresentable {
+  public func convertToURL() -> URL? {
+    return url
+  }
 }

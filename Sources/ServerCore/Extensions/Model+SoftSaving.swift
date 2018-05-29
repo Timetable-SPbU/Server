@@ -10,29 +10,28 @@ import Fluent
 
 extension PostgreSQLModel {
 
-    func saveIfNeeded(
-        on conn: DatabaseConnectable,
-        conditions: ModelFilter<Self>...
-    ) -> Future<Self> {
+  func saveIfNeeded(
+    on connection: DatabaseConnectable,
+    conditions: ModelFilter<Self>...
+  ) -> Future<Self> {
 
-        return Future
-            .flatMap(on: conn) { () -> Future<Self?> in
+    return Future.flatMap(on: connection) { () -> Future<Self?> in
 
-                var query = Self.query(on: conn)
+      var query = Self.query(on: connection)
 
-                for condition in conditions {
-                    query = query.filter(condition)
-                }
+      for condition in conditions {
+        query = query.filter(condition)
+      }
 
-                return query.first()
-            }.flatMap(to: Self.self) { result in
-                if let result = result {
-                    return conn
-                        .eventLoop
-                        .newSucceededFuture(result: result)
-                } else {
-                    return self.save(on: conn)
-                }
-        }
+      return query.first()
+    }.flatMap(to: Self.self) { result in
+      if let result = result {
+        return connection
+          .eventLoop
+          .newSucceededFuture(result: result)
+      } else {
+        return self.save(on: connection)
+      }
     }
+  }
 }

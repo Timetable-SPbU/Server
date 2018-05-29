@@ -12,14 +12,14 @@ import HTTP
 
 public struct Routes {
 
-    public static func declareRoutes(for router: Router) {
+  public static func declareRoutes(for router: Router) {
 
-        let version = router.grouped("v1")
+    let version = router.grouped("v1")
 
-        let divisionsController = DivisionsController()
-        version.get("divisions", use: divisionsController.allDivisions)
+    let divisionsController = DivisionsController()
+    version.get("divisions", use: divisionsController.allDivisions)
 
-        version.get("divisions", Division.parameter,
-                    use: divisionsController.allStudyLevels)
-    }
+    version.get("divisions", Division.parameter,
+                use: divisionsController.allStudyLevels)
+  }
 }
