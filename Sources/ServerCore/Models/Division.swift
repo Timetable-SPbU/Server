@@ -11,6 +11,7 @@ import Vapor
 import DatabaseKit
 import PostgreSQL
 import SPbUappModelsV1
+import TimetableSDK
 
 public final class Division: PostgreSQLModel {
 
@@ -24,7 +25,7 @@ public final class Division: PostgreSQLModel {
 
   public var fieldOfStudyEnglish: String
 
-  public var code: String
+  public var code: DivisionAlias
 
   public var type: DivisionType
 
@@ -36,7 +37,7 @@ public final class Division: PostgreSQLModel {
               fieldOfStudy: String,
               divisionNameEnglish: String,
               fieldOfStudyEnglish: String,
-              code: String,
+              code: DivisionAlias,
               type: DivisionType = .faculty) {
     self.divisionName = divisionName
     self.fieldOfStudy = fieldOfStudy

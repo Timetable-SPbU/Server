@@ -22,7 +22,7 @@ public final class StudyLevel: PostgreSQLModel {
 
   public var divisionTypes: Set<DivisionType>
 
-  var divisions: Siblings<StudyLevel, Division, DivisionStudyLevel> {
+  public var divisions: Siblings<StudyLevel, Division, DivisionStudyLevel> {
     return siblings()
   }
 
@@ -30,11 +30,13 @@ public final class StudyLevel: PostgreSQLModel {
               nameEnglish: String?,
               timetableName: String,
               divisionTypes: Set<DivisionType> = []) {
-    self.name = name
-    self.nameEnglish = nameEnglish
-    self.timetableName = timetableName
+    self.name = name.cleanedUp()
+    self.nameEnglish = nameEnglish?.cleanedUp()
+    self.timetableName = timetableName.cleanedUp()
     self.divisionTypes = divisionTypes
   }
+
+  static let uniqueConstraint = try! UniqueConstraint(\StudyLevel.timetableName)
 }
 
 extension StudyLevel: Migration {
@@ -46,6 +48,8 @@ extension StudyLevel: Migration {
       try addProperties(to: builder)
     }.flatMap(to: Void.self) {
       setCustomType(for: \.divisionTypes, on: connection)
+    }.flatMap(to: Void.self) {
+      uniqueConstraint.activate(on: connection)
     }
   }
 }

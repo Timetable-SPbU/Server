@@ -17,9 +17,9 @@ extension MigrationConfig {
     migrations.add(model: Division.self, database: .psql)
     migrations.add(model: StudyLevel.self, database: .psql)
     migrations.add(model: DivisionStudyLevel.self, database: .psql)
-    migrations.add(model: AdmissionYear.self, database: .psql)
     migrations.add(model: Specialization.self, database: .psql)
     migrations.add(model: StudentStream.self, database: .psql)
+    migrations.add(model: StudentGroup.self, database: .psql)
 
     return migrations
   }

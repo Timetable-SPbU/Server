@@ -9,7 +9,8 @@ import Fluent
 import FluentPostgreSQL
 import PostgreSQL
 
-public final class DivisionStudyLevel: PostgreSQLPivot, ModifiablePivot {
+public final class DivisionStudyLevel: PostgreSQLPivot,
+  ModifiablePivot, Migration {
 
   public typealias Left = Division
 
@@ -30,24 +31,7 @@ public final class DivisionStudyLevel: PostgreSQLPivot, ModifiablePivot {
     self.studyLevelID = try right.requireID()
   }
 
-  public var admissionYears: Children<DivisionStudyLevel, AdmissionYear> {
+  public var specializations: Children<DivisionStudyLevel, Specialization> {
     return children(\.divisionStudyLevelID)
-  }
-}
-
-extension DivisionStudyLevel: Migration {
-
-  /// Runs this migration's changes on the database.
-  /// This is usually creating a table, or altering an existing one.
-  public static func prepare(on connection: Connection) -> Future<Void> {
-    return Database.create(self, on: connection) { builder in
-      try addProperties(to: builder)
-      try builder.addReference(from: \.divisionID,
-                               to: \Division.id,
-                               actions: .update)
-      try builder.addReference(from: \.studyLevelID,
-                               to: \StudyLevel.id,
-                               actions: .update)
-    }
   }
 }

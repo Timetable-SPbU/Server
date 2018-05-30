@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/vapor/http.git",
         "state": {
           "branch": null,
-          "revision": "5e766f72d81ef5fe8805d704efdffd17e4906134",
-          "version": "3.0.6"
+          "revision": "8123ea00e9858b369cd168d0303d33e7d3804d19",
+          "version": "3.0.7"
         }
       },
       {
@@ -96,8 +96,8 @@
         "repositoryURL": "https://github.com/vapor/postgresql.git",
         "state": {
           "branch": null,
-          "revision": "9721627e9dfa103cc41abd8e4a7e3a937fa6cb63",
-          "version": "1.0.0-rc.2.2.2"
+          "revision": "a89177748b28afbd882cf8f892837b626f9f46b2",
+          "version": "1.0.0-rc.2.2.3"
         }
       },
       {
@@ -123,7 +123,7 @@
         "repositoryURL": "/Users/sergej/Developer/Timetable-SPbU/SPbUappModels",
         "state": {
           "branch": "master",
-          "revision": "87ec2dde2aec43ab4f906c7143d6328549781776",
+          "revision": "7b55569ee8cd9f902222e14ddb4c85d16a4e8128",
           "version": null
         }
       },

@@ -23,6 +23,12 @@ public final class TimetableDumper {
   private let baseURLComponents =
     URLComponents(string: "https://timetable.spbu.ru")!
 
+  private var client: HTTPClient? {
+    willSet {
+      assert(client == nil)
+    }
+  }
+
   public init(container: Container,
               database: DatabaseConnectable,
               useProxy: Bool) throws {
@@ -30,6 +36,10 @@ public final class TimetableDumper {
     logger = try container.make(Logger.self)
     self.worker = container
     self.database = database
+  }
+
+  deinit {
+    _ = client?.close()
   }
 
   // MARK: - Dumping the timetable
@@ -43,9 +53,7 @@ public final class TimetableDumper {
 
   private func dumpDivision(_ division: Division) -> Future<Void> {
 
-    let request = StudyLevelRequest(
-      divisionAlias: DivisionAlias(rawValue: division.code)
-    )
+    let request = StudyLevelRequest(divisionAlias: division.code)
 
     return perform(request).flatMap(to: Void.self) { studyLevels in
       studyLevels.serialFutureMap(on: self.database) {
@@ -94,10 +102,8 @@ public final class TimetableDumper {
           .studyLevels
           .attachIfNeeded(studyLevel, on: self.database)
           .flatMap(to: Void.self) { divisionStudyLevel in
-            self.saveAdmissionYearsWithSpecializations(
-              divisionStudyLevel: divisionStudyLevel,
-              programs: timetableStudyLevel.programs
-            )
+            self.saveSpecializations(divisionStudyLevel: divisionStudyLevel,
+                                     programs: timetableStudyLevel.programs)
         }
       } else {
         return self.database.eventLoop.newSucceededFuture(result: ())
@@ -105,7 +111,7 @@ public final class TimetableDumper {
     }
   }
 
-  private func saveAdmissionYearsWithSpecializations(
+  private func saveSpecializations(
     divisionStudyLevel: DivisionStudyLevel,
     programs: [TimetableSDK.StudyLevel.Program]
   ) -> Future<Void> {
@@ -115,38 +121,108 @@ public final class TimetableDumper {
 
         let db = self.database
 
-        return program.admissionYears
-          .serialFutureMap(on: db) { year -> Future<Void> in
+        guard let name = program.name else {
+          // Don't process the specializatioins that don't have names —
+          // it doesn't make sence.
+          return self.database.eventLoop.newSucceededFuture(result: ())
+        }
 
-            guard let yearNumber = year.number else {
-              return db.eventLoop.newSucceededFuture(result: ())
-            }
+        return Future.flatMap(on: db) {
 
-            return Future
-              .flatMap(on: db) { () -> Future<AdmissionYear> in
+          let specialization = try Specialization(
+            name: name,
+            nameEnglish: program.englishName,
+            divisionStudyLevelID: divisionStudyLevel.requireID()
+          )
 
-                let linkID = try divisionStudyLevel.requireID()
-
-                let admissionYearModel = AdmissionYear(
-                  number: yearNumber,
-                  divisionStudyLevelID: linkID
-                )
-
-                return try admissionYearModel.saveIfNeeded(
-                  on: db,
-                  conditions:
-                  \.number == yearNumber,
-                  \.divisionStudyLevelID ==
-                    divisionStudyLevel.id
-                )
-              }.transform(to: ())
+          return try specialization.saveIfNeeded(
+            on: self.database,
+            conditions:
+              \.name == specialization.name,
+              \.divisionStudyLevelID == specialization.divisionStudyLevelID
+          ).flatMap(to: Void.self) { specialization in
+            self.saveStudentStreams(specialization,
+                                    admissionYears: program.admissionYears)
+          }
         }
     }
   }
 
-//  private func saveSpecialization(<#parameters#>) -> <#return type#> {
-//    <#function body#>
-//  }
+  private func saveStudentStreams(
+    _ specialization: Specialization,
+    admissionYears: [TimetableSDK.StudyLevel.AdmissionYear]
+  ) -> Future<Void> {
+
+    return admissionYears
+      .serialFutureMap(on: database) { year -> Future<Void> in
+
+        guard let studyProgramID = year.studyProgramID,
+              let yearNumber = year.number else {
+          return self.database.eventLoop.newSucceededFuture(result: ())
+        }
+
+        return Future.flatMap(on: self.database) {
+
+          let studentStream = try StudentStream(
+            year: yearNumber,
+            timetableStudyProgramID: studyProgramID,
+            specializationID: specialization.requireID()
+          )
+
+          return try studentStream.saveIfNeeded(
+            on: self.database,
+            conditions: \.year == studentStream.year,
+                        \.specializationID == studentStream.specializationID
+          ).then(self.dumpStudentStream)
+        }
+      }
+  }
+
+  private func dumpStudentStream(
+    _ studentStream: StudentStream
+  ) -> Future<Void> {
+
+    let request = StudentGroupsRequest(
+      studydyProgramID: studentStream.timetableStudyProgramID
+    )
+
+    return self.perform(request)
+      .flatMap(to: Void.self) { studentGroupList in
+        studentGroupList.studentGroups
+          .serialFutureMap(on: self.database) {
+            self.saveStudentGroup($0, studentStream: studentStream)
+          }
+    }
+  }
+
+  private func saveStudentGroup(
+    _ timetableStudentGroup: TimetableSDK.StudentGroup,
+    studentStream: StudentStream
+  ) -> Future<Void> {
+
+    guard let id = timetableStudentGroup.id,
+          let name = timetableStudentGroup.name else {
+      return database.eventLoop.newSucceededFuture(result: ())
+    }
+
+    return Future.flatMap(on: database) {
+
+      let studentGroup = try StudentGroup(
+        yearDependentNameFormat: nil,
+        profiles: timetableStudentGroup.profiles,
+        studyForm: timetableStudentGroup.studyForm,
+        timetableID: id,
+        timetableName: name,
+        studentStreamID: studentStream.requireID()
+      )
+
+      // FIXME: Need to use upsert here!
+      return try studentGroup.saveIfNeeded(
+        on: self.database,
+        conditions: \.timetableID == studentGroup.timetableID
+      ).transform(to: ())
+    }
+  }
 
   // MARK: - Perfroming requests
 
@@ -169,8 +245,11 @@ public final class TimetableDumper {
                                   headers: headers)
 
     let httpResponseFuture: Future<HTTPResponse>
+
     if let proxyPool = proxyPool {
       httpResponseFuture = proxyPool.send(httpRequest)
+    } else if let client = self.client {
+      httpResponseFuture = client.send(httpRequest)
     } else {
       httpResponseFuture = HTTPClient
         .connect(scheme: .https,
@@ -178,7 +257,8 @@ public final class TimetableDumper {
                  port: nil,
                  on: worker)
         .flatMap(to: HTTPResponse.self) { client in
-          client.send(httpRequest)
+          self.client = client
+          return client.send(httpRequest)
       }
     }
 
