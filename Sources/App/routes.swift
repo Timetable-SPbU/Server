@@ -11,13 +11,24 @@ public func routes(_ router: Router, environment: Environment) throws {
   APIVersion1.Routes.declareRoutes(for: api)
 
   if !environment.isRelease {
-    router.post("saveStudyLevels") { request -> Future<HTTPStatus> in
+    router.post("saveTimetable") { request -> Future<HTTPStatus> in
 
       let dumper = try TimetableDumper(container: request,
                                        database: request,
                                        useProxy: false)
 
       return dumper.dumpTimetable().map(to: HTTPStatus.self) {
+        return .ok
+      }
+    }
+
+    router.post("saveEducators") { request -> Future<HTTPStatus> in
+
+      let dumper = try TimetableDumper(container: request,
+                                       database: request,
+                                       useProxy: false)
+
+      return dumper.dumpEducators().map(to: HTTPStatus.self) {
         return .ok
       }
     }

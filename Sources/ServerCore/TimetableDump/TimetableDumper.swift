@@ -224,6 +224,41 @@ public final class TimetableDumper {
     }
   }
 
+  public func dumpEducators() -> Future<Void> {
+
+    guard #available(macOS 10.11, *) else {
+      fatalError()
+    }
+
+    // Performing the request with a single emoji as a query
+    // allows us to dump all the educators at once.
+    let request = SearchEducatorRequest(searchQuery: "🦊")
+
+    return perform(request).flatMap(to: Void.self) { result in
+      result.educators.serialFutureMap(on: self.database) { timetableEducator in
+
+        guard let firstName = timetableEducator.name?.givenName,
+          let lastName = timetableEducator.name?.familyName,
+          let id = timetableEducator.id else {
+            return self.database.eventLoop.newSucceededFuture(result: ())
+        }
+
+        let educator = Educator(
+          firstName: firstName,
+          middleName: timetableEducator.name?.middleName,
+          lastName: lastName,
+          timetableID: id
+        )
+
+        return Future.flatMap(on: self.database) {
+          try educator
+            .saveIfNeeded(on: self.database,
+                          conditions: \.timetableID == educator.timetableID)
+        }.transform(to: ())
+      }
+    }
+  }
+
   // MARK: - Perfroming requests
 
   private func perform<Request: TimetableDecodableRequestProtocol>(

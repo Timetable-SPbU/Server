@@ -18,7 +18,7 @@ internal struct UniqueConstraint<M: PostgreSQLModel> {
 
     let columns = try keyPaths.map { try $0.makeQueryFieldPartial().name }
 
-    name = columns.joined(separator: "_") + "_UNIQUE"
+    name = columns.joined(separator: "_") + "_UNIQUE_in_\(M.entity)"
 
     let list = columns.map { "\"\($0)\"" }.joined(separator: ", ")
 

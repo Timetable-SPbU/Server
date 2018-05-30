@@ -20,6 +20,7 @@ extension MigrationConfig {
     migrations.add(model: Specialization.self, database: .psql)
     migrations.add(model: StudentStream.self, database: .psql)
     migrations.add(model: StudentGroup.self, database: .psql)
+    migrations.add(model: Educator.self, database: .psql)
 
     return migrations
   }
