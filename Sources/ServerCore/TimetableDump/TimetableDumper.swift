@@ -279,7 +279,16 @@ public final class TimetableDumper {
 
         return try address
           .createIfNeeded(on: self.database, conditions: \.id == address.id)
-          .then { self.dumpClassrooms(for: $0.0) }
+          .then { existingAddress, created in
+            if !created {
+              existingAddress.locationDescription = address.locationDescription
+              return existingAddress.save(on: self.database)
+            } else {
+              return self.database.future(existingAddress)
+            }
+          }.then { address in
+            return self.dumpClassrooms(for: address)
+          }
       }
     }
   }
@@ -312,7 +321,17 @@ public final class TimetableDumper {
 
           return try classroom
             .createIfNeeded(on: self.database, conditions: \.id == classroom.id)
-            .transform(to: ())
+            .then { existingClassroom, created -> Future<Classroom> in
+              if !created {
+                existingClassroom.name = classroom.name
+                existingClassroom.capacity = classroom.capacity
+                existingClassroom.seating = classroom.seating
+                existingClassroom.additionalInfo = classroom.additionalInfo
+                return existingClassroom.save(on: self.database)
+              } else {
+                return self.database.future(existingClassroom)
+              }
+            }.transform(to: ())
         }
       }
   }

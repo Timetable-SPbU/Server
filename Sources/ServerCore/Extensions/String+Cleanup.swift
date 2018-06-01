@@ -11,7 +11,9 @@ extension String {
 
   internal func cleanedUp() -> String {
 
-    let trim = CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters)
+    let trim = CharacterSet
+      .whitespacesAndNewlines
+      .union(.init(charactersIn: ".,:;"))
 
     return trimmingCharacters(in: trim)
       .replacingOccurrences(of: "\\s+",
