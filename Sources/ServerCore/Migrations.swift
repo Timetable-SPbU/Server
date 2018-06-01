@@ -14,6 +14,7 @@ extension MigrationConfig {
     var migrations = MigrationConfig()
 
     migrations.add(migration: DivisionType.self, database: .psql)
+    migrations.add(migration: Seating.self, database: .psql)
     migrations.add(model: Division.self, database: .psql)
     migrations.add(model: StudyLevel.self, database: .psql)
     migrations.add(model: DivisionStudyLevel.self, database: .psql)
@@ -21,6 +22,8 @@ extension MigrationConfig {
     migrations.add(model: StudentStream.self, database: .psql)
     migrations.add(model: StudentGroup.self, database: .psql)
     migrations.add(model: Educator.self, database: .psql)
+    migrations.add(model: Address.self, database: .psql)
+    migrations.add(model: Classroom.self, database: .psql)
 
     return migrations
   }

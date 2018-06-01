@@ -70,7 +70,7 @@ public final class TimetableDumper {
     guard let name = timetableStudyLevel.name else {
       // Don't process the study levels that don't have names — it doesn't
       // make sence.
-      return database.eventLoop.newSucceededFuture(result: ())
+      return database.future(())
     }
 
     let studyLevel = StudyLevel(
@@ -84,11 +84,11 @@ public final class TimetableDumper {
                       """)
 
     return Future.flatMap(on: database) {
-      try studyLevel.saveIfNeeded(
+      try studyLevel.createIfNeeded(
         on: self.database,
         conditions: \.timetableName == studyLevel.timetableName
       )
-    }.flatMap(to: Void.self) { studyLevel in
+    }.flatMap(to: Void.self) { studyLevel, _ in
 
       self.logger.debug("""
                         Creating connection between study level \
@@ -106,7 +106,7 @@ public final class TimetableDumper {
                                      programs: timetableStudyLevel.programs)
         }
       } else {
-        return self.database.eventLoop.newSucceededFuture(result: ())
+        return self.database.future(())
       }
     }
   }
@@ -119,31 +119,26 @@ public final class TimetableDumper {
     return programs
       .serialFutureMap(on: database) { program -> Future<Void> in
 
-        let db = self.database
-
         guard let name = program.name else {
           // Don't process the specializatioins that don't have names —
           // it doesn't make sence.
-          return self.database.eventLoop.newSucceededFuture(result: ())
+          return self.database.future(())
         }
 
-        return Future.flatMap(on: db) {
+        let specialization = try Specialization(
+          name: name,
+          nameEnglish: program.englishName,
+          divisionStudyLevelID: divisionStudyLevel.requireID()
+        )
 
-          let specialization = try Specialization(
-            name: name,
-            nameEnglish: program.englishName,
-            divisionStudyLevelID: divisionStudyLevel.requireID()
-          )
-
-          return try specialization.saveIfNeeded(
-            on: self.database,
-            conditions:
-              \.name == specialization.name,
-              \.divisionStudyLevelID == specialization.divisionStudyLevelID
-          ).flatMap(to: Void.self) { specialization in
+        return try specialization.createIfNeeded(
+          on: self.database,
+          conditions:
+          \.name == specialization.name,
+          \.divisionStudyLevelID == specialization.divisionStudyLevelID
+          ).flatMap(to: Void.self) { specialization, _ in
             self.saveStudentStreams(specialization,
                                     admissionYears: program.admissionYears)
-          }
         }
     }
   }
@@ -158,23 +153,20 @@ public final class TimetableDumper {
 
         guard let studyProgramID = year.studyProgramID,
               let yearNumber = year.number else {
-          return self.database.eventLoop.newSucceededFuture(result: ())
+          return self.database.future(())
         }
 
-        return Future.flatMap(on: self.database) {
+        let studentStream = try StudentStream(
+          year: yearNumber,
+          timetableStudyProgramID: studyProgramID,
+          specializationID: specialization.requireID()
+        )
 
-          let studentStream = try StudentStream(
-            year: yearNumber,
-            timetableStudyProgramID: studyProgramID,
-            specializationID: specialization.requireID()
-          )
-
-          return try studentStream.saveIfNeeded(
-            on: self.database,
-            conditions: \.year == studentStream.year,
-                        \.specializationID == studentStream.specializationID
-          ).then(self.dumpStudentStream)
-        }
+        return try studentStream.createIfNeeded(
+          on: self.database,
+          conditions: \.year == studentStream.year,
+          \.specializationID == studentStream.specializationID
+        ).then { self.dumpStudentStream($0.0) }
       }
   }
 
@@ -202,7 +194,7 @@ public final class TimetableDumper {
 
     guard let id = timetableStudentGroup.id,
           let name = timetableStudentGroup.name else {
-      return database.eventLoop.newSucceededFuture(result: ())
+      return database.future(())
     }
 
     return Future.flatMap(on: database) {
@@ -216,11 +208,21 @@ public final class TimetableDumper {
         studentStreamID: studentStream.requireID()
       )
 
-      // FIXME: Need to use upsert here!
-      return try studentGroup.saveIfNeeded(
+      return try studentGroup.createIfNeeded(
         on: self.database,
         conditions: \.timetableID == studentGroup.timetableID
-      ).transform(to: ())
+      ).then { existingStudentGroup, created -> Future<Void> in
+        if !created {
+          // The student group already existed, update it.
+          existingStudentGroup.timetableName = studentGroup.timetableName
+          existingStudentGroup.studentStreamID = studentGroup.studentStreamID
+          existingStudentGroup.studyForm = studentGroup.studyForm
+          existingStudentGroup.profiles = studentGroup.profiles
+          return existingStudentGroup.save(on: self.database).transform(to: ())
+        } else {
+          return self.database.future(())
+        }
+      }
     }
   }
 
@@ -238,9 +240,9 @@ public final class TimetableDumper {
       result.educators.serialFutureMap(on: self.database) { timetableEducator in
 
         guard let firstName = timetableEducator.name?.givenName,
-          let lastName = timetableEducator.name?.familyName,
-          let id = timetableEducator.id else {
-            return self.database.eventLoop.newSucceededFuture(result: ())
+              let lastName = timetableEducator.name?.familyName,
+              let id = timetableEducator.id else {
+            return self.database.future(())
         }
 
         let educator = Educator(
@@ -250,13 +252,69 @@ public final class TimetableDumper {
           timetableID: id
         )
 
-        return Future.flatMap(on: self.database) {
-          try educator
-            .saveIfNeeded(on: self.database,
+        return try educator
+          .createIfNeeded(on: self.database,
                           conditions: \.timetableID == educator.timetableID)
-        }.transform(to: ())
+          .transform(to: ())
       }
     }
+  }
+
+  public func dumpLocations() -> Future<Void> {
+
+    return perform(AddressesRequest()).then { addresses in
+
+      addresses.serialFutureMap(on: self.database) {
+
+        guard let id = ($0.id?.rawValue).map(Identifier<Address>.init),
+              let name = $0.name else {
+          return self.database.future(())
+        }
+
+        let address = Address(id: id, locationDescription: name)
+
+        self.logger.debug("""
+                          Fetched address "\(name)". Saving...
+                          """)
+
+        return try address
+          .createIfNeeded(on: self.database, conditions: \.id == address.id)
+          .then { self.dumpClassrooms(for: $0.0) }
+      }
+    }
+  }
+
+  private func dumpClassrooms(for address: Address) -> Future<Void> {
+
+    return Future
+      .flatMap(on: database) { () -> Future<[TimetableSDK.Classroom]> in
+
+        let addressID = try AddressID(rawValue: address.requireID().rawValue)
+        let request = ClassroomsRequest(addressID: addressID)
+
+        return self.perform(request)
+      }.then { classrooms -> Future<Void> in
+        classrooms.serialFutureMap(on: self.database) { room in
+
+          guard let id = (room.id?.rawValue).map(Identifier<Classroom>.init),
+                let name = room.name else {
+            return self.database.future(())
+          }
+
+          let classroom = try Classroom(
+            id: id,
+            name: name,
+            capacity: room.capacity,
+            seating: room.seating.map(Seating.init),
+            additionalInfo: room.additionalInfo,
+            addressID: address.requireID()
+          )
+
+          return try classroom
+            .createIfNeeded(on: self.database, conditions: \.id == classroom.id)
+            .transform(to: ())
+        }
+      }
   }
 
   // MARK: - Perfroming requests

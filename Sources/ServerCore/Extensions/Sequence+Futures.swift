@@ -32,17 +32,17 @@ extension Sequence {
 
   private func _serialFutureMap<U>(
     on worker: Worker,
-    _ transform: @escaping (Element) -> Future<U>
+    _ transform: @escaping (Element) throws -> Future<U>
   ) -> Future<[U]> {
 
-    var future = worker.eventLoop.newSucceededFuture(result: ())
+    var future = worker.future(())
 
     var transformed = [U]()
 
     for element in self {
 
-      future = future.then {
-        transform(element)
+      future = future.flatMap {
+        try transform(element)
       }.map {
         transformed.append($0)
       }
@@ -60,7 +60,7 @@ extension Sequence {
 
   func serialFutureMap(
     on worker: Worker,
-    _ transform: @escaping (Element) -> Future<Void>
+    _ transform: @escaping (Element) throws -> Future<Void>
   ) -> Future<Void> {
     return _serialFutureMap(on: worker, transform).transform(to: ())
   }

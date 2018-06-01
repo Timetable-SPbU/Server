@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/vapor/core.git",
         "state": {
           "branch": null,
-          "revision": "3b72f2cc3fb21d505fbe97215418951a8e4a2871",
-          "version": "3.2.1"
+          "revision": "174f909bc048a6aff27d6cb4c31810971f912cca",
+          "version": "3.2.2"
         }
       },
       {
@@ -33,8 +33,8 @@
         "repositoryURL": "https://github.com/vapor/crypto.git",
         "state": {
           "branch": null,
-          "revision": "1b8c2ba5a42f1adf2aa812204678d8b16466fa59",
-          "version": "3.1.2"
+          "revision": "4b85405430df1892ee3aa1554bdb477e96cf46ad",
+          "version": "3.2.0"
         }
       },
       {
@@ -123,7 +123,7 @@
         "repositoryURL": "/Users/sergej/Developer/Timetable-SPbU/SPbUappModels",
         "state": {
           "branch": "master",
-          "revision": "7b55569ee8cd9f902222e14ddb4c85d16a4e8128",
+          "revision": "bfc660d2783ad0e893da9bc9f90ac542931f9890",
           "version": null
         }
       },
@@ -141,8 +141,8 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": null,
-          "revision": "77dc77b9b5cdddfb3c385c5ee6cb74153d284967",
-          "version": "1.7.2"
+          "revision": "695afc5205aaa49fca092b94b479ff71c43d9d3c",
+          "version": "1.8.0"
         }
       },
       {
@@ -195,7 +195,7 @@
         "repositoryURL": "https://github.com/Timetable-SPbU/TimetableSDK.git",
         "state": {
           "branch": "master",
-          "revision": "981b1b6e89be6e92e25caf48e3323012b0429bf6",
+          "revision": "e95eaa094553976ff71944436fbdaf71b997dd72",
           "version": null
         }
       },

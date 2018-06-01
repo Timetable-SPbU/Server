@@ -43,15 +43,14 @@ final class DivisionsController {
     }
   }
 
-  func allStudyLevels(for request: Request) throws -> Future<String> {
+  func addDivision(_ request: Request) throws -> Future<HTTPStatus> {
 
-    let tmp = try request.parameters
-      .next(Division.self)
-      .flatMap(to: [StudyLevel].self) { division in
-        try division.studyLevels.query(on: request).all()
+    return try request.content.decode(ServerCore.Division.self)
+      .then { division in
+        division.create(on: request)
+      }.map { _ in
+        .created
       }
-
-    fatalError()
   }
 }
 

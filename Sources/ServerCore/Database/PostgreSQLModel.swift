@@ -16,13 +16,18 @@ public protocol PostgreSQLModel: Model
 
   typealias Connection = Database.Connection
 
+  associatedtype UnderlyingID:
+    Hashable, Fluent.ID, PostgreSQLDataConvertible, ReflectionDecodable = Int
+
   /// This model's unique identifier.
   var id: Identifier<Self>? { get set }
 }
 
-extension PostgreSQLModel where Self.ID == Identifier<Self>  {
-
+extension PostgreSQLModel where ID == Identifier<Self> {
   public static var idKey: IDKey { return \.id }
+}
+
+extension PostgreSQLModel where ID == Identifier<Self>, UnderlyingID == Int  {
 
   public func didCreate(
     on connection: PostgreSQLConnection
@@ -44,6 +49,34 @@ extension PostgreSQLModel where Self.ID == Identifier<Self>  {
 
 extension PostgreSQLModel {
 
+  // FIXME: This is a sloppy version of UPSERT. Need to use real upsert as soon
+  // as we can implement it in terms of Fluent.
+  func createIfNeeded(
+    on worker: DatabaseConnectable,
+    conditions: ModelFilter<Self>...
+  ) -> Future<(Self, created: Bool)> {
+
+    return Future.flatMap(on: worker) { () -> Future<Self?> in
+
+      var query = Self.query(on: worker)
+
+      for condition in conditions {
+        query = query.filter(condition)
+      }
+
+      return query.first()
+    }.then { result in
+      if let result = result {
+        return worker.future((result, false))
+      } else {
+        return self.create(on: worker).map { ($0, true) }
+      }
+    }
+  }
+}
+
+extension PostgreSQLModel {
+
   private static func _setCustomType<T>(
     for column: KeyPath<Self, T>,
     typeName: String,
@@ -56,8 +89,8 @@ extension PostgreSQLModel {
 
       let alterColumnType = """
       ALTER TABLE "\(entity)"
-      ALTER COLUMN "\(columnName)" TYPE \(typeName)
-      USING "\(columnName)"::\(typeName);
+        ALTER COLUMN "\(columnName)" TYPE \(typeName)
+          USING "\(columnName)"::\(typeName);
       """
 
       return connection.simpleQuery(alterColumnType).transform(to: ())
@@ -67,6 +100,16 @@ extension PostgreSQLModel {
   /// Alters the column to set a custom type.
   static func setCustomType<T: PostgreSQLType>(
     for column: KeyPath<Self, T>,
+    on connection: PostgreSQLConnection
+  ) -> Future<Void> {
+    return _setCustomType(for: column,
+                          typeName: "\"\(T.self)\"",
+                          on: connection)
+  }
+
+  /// Alters the column to set a custom type.
+  static func setCustomType<T: PostgreSQLType>(
+    for column: KeyPath<Self, T?>,
     on connection: PostgreSQLConnection
   ) -> Future<Void> {
     return _setCustomType(for: column,
@@ -94,9 +137,7 @@ public protocol PostgreSQLPivot: Pivot, PostgreSQLModel
 extension PostgreSQLPivot {
 
   /// Use this implementation if `PostgreSQLPivot` conforms to `Migration`.
-  public static func prepare(
-    on connection: PostgreSQLConnection
-  ) -> Future<Void> {
+  public static func prepare(on connection: Connection) -> Future<Void> {
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
       try builder.addReference(from: leftIDKey,

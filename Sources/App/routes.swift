@@ -17,8 +17,8 @@ public func routes(_ router: Router, environment: Environment) throws {
                                        database: request,
                                        useProxy: false)
 
-      return dumper.dumpTimetable().map(to: HTTPStatus.self) {
-        return .ok
+      return dumper.dumpTimetable().map {
+        return .created
       }
     }
 
@@ -28,8 +28,19 @@ public func routes(_ router: Router, environment: Environment) throws {
                                        database: request,
                                        useProxy: false)
 
-      return dumper.dumpEducators().map(to: HTTPStatus.self) {
-        return .ok
+      return dumper.dumpEducators().map {
+        return .created
+      }
+    }
+
+    router.post("saveLocations") { request -> Future<HTTPStatus> in
+
+      let dumper = try TimetableDumper(container: request,
+                                       database: request,
+                                       useProxy: false)
+
+      return dumper.dumpLocations().map {
+        return .created
       }
     }
   }

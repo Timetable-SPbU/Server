@@ -18,9 +18,9 @@ public typealias GenericIdentifier = PostgreSQLDataConvertible &
 public struct Identifier<Model: PostgreSQLModel>: ID,
   RawRepresentable, GenericIdentifier {
 
-  public var rawValue: Int
+  public var rawValue: Model.UnderlyingID
 
-  public init(rawValue: Int) {
+  public init(rawValue: Model.UnderlyingID) {
     self.rawValue = rawValue
   }
 
@@ -31,7 +31,13 @@ public struct Identifier<Model: PostgreSQLModel>: ID,
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
-    self.init(rawValue: try container.decode(Int.self))
+    self.init(rawValue: try container.decode(Model.UnderlyingID.self))
+  }
+
+  public static func reflectDecoded()
+    throws -> (Identifier<Model>, Identifier<Model>) {
+      let (left, right) = try RawValue.reflectDecoded()
+      return (Identifier(rawValue: left), Identifier(rawValue: right))
   }
 }
 
