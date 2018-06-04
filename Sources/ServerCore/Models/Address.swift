@@ -44,6 +44,8 @@ public final class Address: PostgreSQLModel, Migration {
 
   public var coordinates: PostgreSQLPoint?
 
+  public var wiki: String?
+
   public init(id: Identifier<Address>?,
               name: String? = nil,
               shortName: String? = nil,
@@ -54,18 +56,20 @@ public final class Address: PostgreSQLModel, Migration {
               letter: String? = nil,
               entrance: String? = nil,
               locationDescription: String,
-              coordinates: PostgreSQLPoint? = nil) {
+              coordinates: PostgreSQLPoint? = nil,
+              wiki: String? = nil) {
     self.id = id
-    self.name = name?.cleanedUp()
-    self.shortName = shortName?.cleanedUp()
-    self.city = city?.cleanedUp()
-    self.street = street?.cleanedUp()
-    self.house = house?.cleanedUp()
-    self.building = building?.cleanedUp()
-    self.letter = letter?.cleanedUp()
-    self.entrance = entrance?.cleanedUp()
+    self.name = name
+    self.shortName = shortName
+    self.city = city
+    self.street = street
+    self.house = house
+    self.building = building
+    self.letter = letter
+    self.entrance = entrance
     self.locationDescription = locationDescription.cleanedUp()
     self.coordinates = coordinates
+    self.wiki = wiki
   }
 
   public var classrooms: Children<Address, Classroom> {
