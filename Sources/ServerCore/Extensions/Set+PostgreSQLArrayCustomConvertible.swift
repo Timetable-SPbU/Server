@@ -48,9 +48,6 @@ extension Set: ReflectionDecodable {
   }
 }
 
-// Dynamic casting for conditional conformances must be supported in Swift 4.2
-#if swift(>=4.2)
-#else
 func forceCast<T>(_ type: T.Type) -> PostgreSQLDataConvertible.Type {
 
   guard let custom = T.self as? PostgreSQLDataConvertible.Type else {
@@ -74,4 +71,3 @@ func forceCast<T>(_ type: T.Type) throws -> AnyReflectionDecodable.Type {
   }
   return casted
 }
-#endif

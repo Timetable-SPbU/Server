@@ -123,7 +123,7 @@
         "repositoryURL": "/Users/sergej/Developer/Timetable-SPbU/SPbUappModels",
         "state": {
           "branch": "master",
-          "revision": "bfc660d2783ad0e893da9bc9f90ac542931f9890",
+          "revision": "91df2d800b4bcc9f0f239edd7e341e02ace17121",
           "version": null
         }
       },
@@ -222,8 +222,8 @@
         "repositoryURL": "https://github.com/vapor/vapor.git",
         "state": {
           "branch": null,
-          "revision": "39b4d3fa36e58c6f7415c9da6c65a703bec34cea",
-          "version": "3.0.3"
+          "revision": "09faa90db7ca49d7f75d5f8e385abce93bc7afb3",
+          "version": "3.0.4"
         }
       },
       {

@@ -61,7 +61,7 @@ public final class StudyEvent: PostgreSQLModel, Timestampable {
               withinTheSameDay: Bool) {
     self.start = start
     self.end = end
-    self.name = name
+    self.name = name.cleanedUp()
     self.isCancelled = isCancelled
     self.timeChanged = timeChanged
     self.locationsChanged = locationsChanged

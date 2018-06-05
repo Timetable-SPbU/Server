@@ -20,7 +20,7 @@ extension Sequence {
     on worker: Worker,
     _ transform: @escaping (Element) -> Future<U>
   ) -> Future<[U]> {
-    return parallelFutureMap(on: worker, transform)
+    return _parallelFutureMap(on: worker, transform)
   }
 
   func parallelFutureMap(

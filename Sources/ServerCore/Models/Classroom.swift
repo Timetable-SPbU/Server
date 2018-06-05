@@ -43,7 +43,7 @@ public final class Classroom: PostgreSQLModel {
               addressID: Identifier<Address>) {
     self.id = id
     self.name = name.cleanedUp()
-    self.shortName = shortName?.cleanedUp()
+    self.shortName = shortName
     self.capacity = capacity
     self.seating = seating
     self.additionalInfo = additionalInfo?.cleanedUp()
