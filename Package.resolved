@@ -120,7 +120,7 @@
       },
       {
         "package": "SPbUappModels",
-        "repositoryURL": "/Users/sergej/Developer/Timetable-SPbU/SPbUappModels",
+        "repositoryURL": "https://github.com/Timetable-SPbU/SPbUappModels.git",
         "state": {
           "branch": "master",
           "revision": "91df2d800b4bcc9f0f239edd7e341e02ace17121",

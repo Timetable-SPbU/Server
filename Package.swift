@@ -11,7 +11,8 @@ let package = Package(
     .package(url: "https://github.com/vapor/fluent-postgresql.git",
              from: "1.0.0-rc"),
 
-    .package(url: "../SPbUappModels", .branchItem("master")),
+    .package(url: "https://github.com/Timetable-SPbU/SPbUappModels.git",
+             .branchItem("master")),
     .package(url: "https://github.com/Timetable-SPbU/TimetableSDK.git",
              .branchItem("master"))
   ],
