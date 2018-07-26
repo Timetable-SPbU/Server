@@ -30,11 +30,6 @@ public final class Specialization: PostgreSQLModel {
   public var studentStreams: Children<Specialization, StudentStream> {
     return children(\.specializationID)
   }
-
-  static let uniqueConstraint = try! UniqueConstraint(
-    \Specialization.name,
-    \Specialization.divisionStudyLevelID
-  )
 }
 
 extension Specialization: Migration {
@@ -45,11 +40,11 @@ extension Specialization: Migration {
 
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
-      try builder.addReference(from: \.divisionStudyLevelID,
-                               to: \DivisionStudyLevel.id,
-                               actions: .update)
-    }.flatMap(to: Void.self) {
-        uniqueConstraint.activate(on: connection)
+      builder.reference(from: \.divisionStudyLevelID,
+                        to: \DivisionStudyLevel.id,
+                        onUpdate: .cascade,
+                        onDelete: .cascade)
+      builder.unique(on: \.name, \.divisionStudyLevelID)
     }
   }
 }

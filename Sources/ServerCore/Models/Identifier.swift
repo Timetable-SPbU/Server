@@ -13,11 +13,20 @@ import SPbUappModelsV1
 
 public typealias GenericIdentifier = PostgreSQLDataConvertible &
                                      ReflectionDecodable &
-                                     PostgreSQLColumnStaticRepresentable
+                                     PostgreSQLDataTypeStaticRepresentable
 
-public struct Identifier<Model: PostgreSQLModel>: ID,
-  RawRepresentable, GenericIdentifier {
+extension RawRepresentable
+where RawValue: PostgreSQLDataTypeStaticRepresentable {
+  public static var postgreSQLDataType: PostgreSQLDataType {
+    return RawValue.postgreSQLDataType
+  }
+}
 
+public struct Identifier<Model: PostgreSQLModel>:
+  ID,
+  RawRepresentable,
+  GenericIdentifier
+{
   public var rawValue: Model.UnderlyingID
 
   public init(rawValue: Model.UnderlyingID) {
@@ -34,10 +43,11 @@ public struct Identifier<Model: PostgreSQLModel>: ID,
     self.init(rawValue: try container.decode(Model.UnderlyingID.self))
   }
 
-  public static func reflectDecoded()
-    throws -> (Identifier<Model>, Identifier<Model>) {
-      let (left, right) = try RawValue.reflectDecoded()
-      return (Identifier(rawValue: left), Identifier(rawValue: right))
+  public static func reflectDecoded() throws -> (
+    Identifier<Model>, Identifier<Model>
+  ) {
+    let (left, right) = try RawValue.reflectDecoded()
+    return (.init(rawValue: left), .init(rawValue: right))
   }
 }
 
@@ -48,11 +58,35 @@ extension DivisionAlias: GenericIdentifier {
   }
 }
 
-extension StudyProgramID: GenericIdentifier {}
+extension StudyProgramID: GenericIdentifier {
+  public static func reflectDecoded() throws -> (
+    StudyProgramID,
+    StudyProgramID
+  ) {
+    let rawValues = Int.reflectDecoded()
+    return (.init(rawValue: rawValues.0), .init(rawValue: rawValues.1))
+  }
+}
 
-extension StudentGroupID: GenericIdentifier {}
+extension StudentGroupID: GenericIdentifier {
+  public static func reflectDecoded() throws -> (
+    StudentGroupID,
+    StudentGroupID
+  ) {
+    let rawValues = Int.reflectDecoded()
+    return (.init(rawValue: rawValues.0), .init(rawValue: rawValues.1))
+  }
+}
 
-extension EducatorID: GenericIdentifier {}
+extension EducatorID: GenericIdentifier {
+  public static func reflectDecoded() throws -> (
+    EducatorID,
+    EducatorID
+  ) {
+    let rawValues = Int.reflectDecoded()
+    return (.init(rawValue: rawValues.0), .init(rawValue: rawValues.1))
+  }
+}
 
 extension StudyForm: GenericIdentifier {
   public static func reflectDecoded() throws -> (StudyForm, StudyForm) {

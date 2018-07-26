@@ -5,15 +5,15 @@ let package = Package(
   name: "Server",
   dependencies: [
     // 💧 A server-side Swift web framework.
-    .package(url: "https://github.com/vapor/vapor.git", from: "3.0.3"),
+    .package(url: "https://github.com/vapor/vapor.git", from: "3.0.7"),
 
     // 🔵 Swift ORM (queries, models, relations, etc) built on PostgreSQL.
     .package(url: "https://github.com/vapor/fluent-postgresql.git",
-             from: "1.0.0-rc"),
+             from: "1.0.0"),
 
-    .package(url: "../SPbUappModels", .branchItem("master")),
+    .package(url: "../SPbUappModels", .branch("master")),
     .package(url: "https://github.com/Timetable-SPbU/TimetableSDK.git",
-             .branchItem("master"))
+             .branch("master"))
   ],
   targets: [
     .target(name: "ServerCore",

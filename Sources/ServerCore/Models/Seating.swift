@@ -11,15 +11,9 @@ import SPbUappModelsV1
 
 public typealias Seating = SPbUappModelsV1.Seating
 
-extension Seating: PostgreSQLEnumType, Migration {
-
-  public static func reflectDecoded() throws -> (Seating, Seating) {
-      return (.theater, .amphitheater)
-  }
-}
+extension Seating: PostgreSQLEnum, PostgreSQLMigration {}
 
 extension Seating {
-
   internal init(_ seating: TimetableSDK.Seating) {
     switch seating {
     case .theater:

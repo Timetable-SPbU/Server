@@ -48,19 +48,6 @@ public final class Division: PostgreSQLModel {
   }
 }
 
-extension Division: Migration {
-
-  /// Runs this migration's changes on the database.
-  /// This is usually creating a table, or altering an existing one.
-  public static func prepare(on connection: Connection) -> Future<Void> {
-    return Database.create(self, on: connection) { builder in
-      try addProperties(to: builder)
-    }.flatMap(to: Void.self) {
-      // Fluent cannot (yet?) assign a custom type to columns, so we
-      // need to do it manually.
-      return setCustomType(for: \.type, on: connection)
-    }
-  }
-}
+extension Division: Migration {}
 
 extension Division: Parameter {}

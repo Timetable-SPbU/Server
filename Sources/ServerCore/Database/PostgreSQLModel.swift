@@ -11,13 +11,15 @@ import Vapor
 
 /// Reimplementation of `FluentPostgreSQL.PostgreSQLModel`
 /// with strongly typed ID.
-public protocol PostgreSQLModel: Model
-where Self.Database == PostgreSQLDatabase {
+public protocol PostgreSQLModel: _PostgreSQLModel {
 
   typealias Connection = Database.Connection
 
-  associatedtype UnderlyingID:
-    Hashable, Fluent.ID, PostgreSQLDataConvertible, ReflectionDecodable = Int
+  associatedtype UnderlyingID: Hashable,
+                               Fluent.ID,
+                               PostgreSQLDataConvertible,
+                               PostgreSQLDataTypeStaticRepresentable,
+                               ReflectionDecodable = Int
 
   /// This model's unique identifier.
   var id: Identifier<Self>? { get set }
@@ -27,109 +29,57 @@ extension PostgreSQLModel where ID == Identifier<Self> {
   public static var idKey: IDKey { return \.id }
 }
 
-extension PostgreSQLModel where ID == Identifier<Self>, UnderlyingID == Int  {
+// MARK: - Upsert
 
-  public func didCreate(
-    on connection: PostgreSQLConnection
-  ) throws -> Future<Self> {
+extension QueryBuilder
+where Result: PostgreSQLModel, Result.Database == Database {
 
-    return connection
-      .simpleQuery("SELECT LASTVAL();")
-      .map(to: Self.self) { row in
-        var model = self
-        let intID = try row.first?
-          .firstValue(forColumn: "lastval")?
-          .decode(Int.self)
+  /// Creates the model or updates it depending on whether a model
+  /// with the same ID already exists.
+  internal func upsert(_ model: Result,
+                       columns: [PostgreSQLColumnIdentifier]) -> Future<Result> {
 
-        model.fluentID = intID.map(Identifier<Self>.init)
-        return model
-    }
+    let row = SQLQueryEncoder(PostgreSQLExpression.self).encode(model)
+
+    let values = row
+      .map { row -> (PostgreSQLIdentifier, PostgreSQLExpression) in
+        return (.identifier(row.key), row.value)
+      }
+
+    self.query.upsert = .upsert(columns, values)
+    return create(model)
   }
+
 }
 
 extension PostgreSQLModel {
 
-  // FIXME: This is a sloppy version of UPSERT. Need to use real upsert as soon
-  // as we can implement it in terms of Fluent.
-  func createIfNeeded(
-    on worker: DatabaseConnectable,
-    conditions: ModelFilter<Self>...
-  ) -> Future<(Self, created: Bool)> {
+  /// Creates the model or updates it depending on whether a model
+  /// with the same ID already exists.
+  internal func upsert(on connection: DatabaseConnectable) -> Future<Self> {
+    return Self
+      .query(on: connection)
+      .upsert(self, columns: [.keyPath(Self.idKey)])
+  }
 
-    return Future.flatMap(on: worker) { () -> Future<Self?> in
+  internal func upsert<U>(on connection: DatabaseConnectable,
+                          onConflict keyPath: KeyPath<Self, U>) -> Future<Self> {
+    return Self
+      .query(on: connection)
+      .upsert(self, columns: [.keyPath(keyPath)])
+  }
 
-      var query = Self.query(on: worker)
-
-      for condition in conditions {
-        query = query.filter(condition)
-      }
-
-      return query.first()
-    }.then { result in
-      if let result = result {
-        return worker.future((result, false))
-      } else {
-        return self.create(on: worker).map { ($0, true) }
-      }
-    }
+  internal func upsert<U, V>(on connection: DatabaseConnectable,
+                             onConflict keyPath1: KeyPath<Self, U>,
+                             _ keyPath2: KeyPath<Self, V>) -> Future<Self> {
+    return Self
+      .query(on: connection)
+      .upsert(self, columns: [.keyPath(keyPath1), .keyPath(keyPath2)])
   }
 }
 
-extension PostgreSQLModel {
-
-  private static func _setCustomType<T>(
-    for column: KeyPath<Self, T>,
-    typeName: String,
-    on connection: PostgreSQLConnection
-  ) -> Future<Void> {
-
-    return Future.flatMap(on: connection) { () -> Future<Void> in
-
-      let columnName = try column.makeQueryField().name
-
-      let alterColumnType = """
-      ALTER TABLE "\(entity)"
-        ALTER COLUMN "\(columnName)" TYPE \(typeName)
-          USING "\(columnName)"::\(typeName);
-      """
-
-      return connection.simpleQuery(alterColumnType).transform(to: ())
-    }
-  }
-
-  /// Alters the column to set a custom type.
-  static func setCustomType<T: PostgreSQLType>(
-    for column: KeyPath<Self, T>,
-    on connection: PostgreSQLConnection
-  ) -> Future<Void> {
-    return _setCustomType(for: column,
-                          typeName: "\"\(T.self)\"",
-                          on: connection)
-  }
-
-  /// Alters the column to set a custom type.
-  static func setCustomType<T: PostgreSQLType>(
-    for column: KeyPath<Self, T?>,
-    on connection: PostgreSQLConnection
-  ) -> Future<Void> {
-    return _setCustomType(for: column,
-                          typeName: "\"\(T.self)\"",
-                          on: connection)
-  }
-
-  // Alters the column to set a custom array type.
-  static func setCustomType<T: PostgreSQLArrayType>(
-    for column: KeyPath<Self, T>,
-    on connection: PostgreSQLConnection
-  ) -> Future<Void> {
-    return _setCustomType(for: column,
-                          typeName: "\"\(T.PostgreSQLArrayElement.self)\"[]",
-                          on: connection)
-  }
-}
-
-public protocol PostgreSQLPivot:
-  Pivot, PostgreSQLModel
+// MARK: - Many-to-many
+public protocol PostgreSQLPivot: Pivot, PostgreSQLModel
 where Left: PostgreSQLModel,
       Right: PostgreSQLModel,
       Left.ID == Identifier<Left>,
@@ -141,14 +91,15 @@ extension PostgreSQLPivot {
   public static func prepare(on connection: Connection) -> Future<Void> {
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
-      try builder.addReference(from: leftIDKey,
-                               to: \Left.id,
-                               actions: .update)
-      try builder.addReference(from: rightIDKey,
-                               to: \Right.id,
-                               actions: .update)
-    }.flatMap(to: Void.self) {
-      try UniqueConstraint<Self>(leftIDKey, rightIDKey).activate(on: connection)
+      builder.reference(from: leftIDKey,
+                        to: \Left.id,
+                        onUpdate: .cascade,
+                        onDelete: .cascade)
+      builder.reference(from: rightIDKey,
+                        to: \Right.id,
+                        onUpdate: .cascade,
+                        onDelete: .cascade)
+      builder.unique(on: leftIDKey, rightIDKey)
     }
   }
 

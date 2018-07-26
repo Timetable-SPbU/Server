@@ -8,9 +8,4 @@
 import FluentPostgreSQL
 @_exported import SPbUappModelsV1
 
-extension DivisionType: PostgreSQLEnumType, Migration {
-
-  public static func reflectDecoded() throws -> (DivisionType, DivisionType) {
-    return (.highSchool, .faculty)
-  }
-}
+extension DivisionType: PostgreSQLEnum, PostgreSQLMigration {}

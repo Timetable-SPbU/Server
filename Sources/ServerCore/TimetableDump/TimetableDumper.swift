@@ -83,31 +83,27 @@ public final class TimetableDumper {
                       Fetched study level "\(studyLevel.name)". Saving...
                       """)
 
-    return Future.flatMap(on: database) {
-      try studyLevel.createIfNeeded(
-        on: self.database,
-        conditions: \.timetableName == studyLevel.timetableName
-      )
-    }.flatMap(to: Void.self) { studyLevel, _ in
+    return studyLevel.upsert(on: database, onConflict: \.timetableName)
+      .flatMap(to: Void.self) { studyLevel in
 
-      self.logger.debug("""
-                        Creating connection between study level \
-                        "\(studyLevel.name)" and \
-                        division "\(division.divisionName)"
-                        """)
+        self.logger.debug("""
+          Creating connection between study level \
+          "\(studyLevel.name)" and \
+          division "\(division.divisionName)"
+          """)
 
-      if studyLevel.divisionTypes.isEmpty ||
-        studyLevel.divisionTypes.contains(division.type) {
-        return division
-          .studyLevels
-          .attachIfNeeded(studyLevel, on: self.database)
-          .flatMap(to: Void.self) { divisionStudyLevel in
-            self.saveSpecializations(divisionStudyLevel: divisionStudyLevel,
-                                     programs: timetableStudyLevel.programs)
+        if studyLevel.divisionTypes.isEmpty ||
+          studyLevel.divisionTypes.contains(division.type) {
+          return division
+            .studyLevels
+            .attachIfNeeded(studyLevel, on: self.database)
+            .flatMap(to: Void.self) { divisionStudyLevel in
+              self.saveSpecializations(divisionStudyLevel: divisionStudyLevel,
+                                       programs: timetableStudyLevel.programs)
+          }
+        } else {
+          return self.database.future(())
         }
-      } else {
-        return self.database.future(())
-      }
     }
   }
 
@@ -131,15 +127,12 @@ public final class TimetableDumper {
           divisionStudyLevelID: divisionStudyLevel.requireID()
         )
 
-        return try specialization.createIfNeeded(
-          on: self.database,
-          conditions:
-          \.name == specialization.name,
-          \.divisionStudyLevelID == specialization.divisionStudyLevelID
-          ).flatMap(to: Void.self) { specialization, _ in
+        return specialization
+          .upsert(on: self.database, onConflict: \.name, \.divisionStudyLevelID)
+          .flatMap(to: Void.self) { specialization in
             self.saveStudentStreams(specialization,
                                     admissionYears: program.admissionYears)
-        }
+          }
     }
   }
 
@@ -162,11 +155,9 @@ public final class TimetableDumper {
           specializationID: specialization.requireID()
         )
 
-        return try studentStream.createIfNeeded(
-          on: self.database,
-          conditions: \.year == studentStream.year,
-          \.specializationID == studentStream.specializationID
-        ).then { self.dumpStudentStream($0.0) }
+        return studentStream.upsert(on: self.database,
+                                    onConflict: \.year, \.specializationID)
+          .then(self.dumpStudentStream)
       }
   }
 
@@ -208,21 +199,8 @@ public final class TimetableDumper {
         studentStreamID: studentStream.requireID()
       )
 
-      return try studentGroup.createIfNeeded(
-        on: self.database,
-        conditions: \.timetableID == studentGroup.timetableID
-      ).then { existingStudentGroup, created -> Future<Void> in
-        if !created {
-          // The student group already existed, update it.
-          existingStudentGroup.timetableName = studentGroup.timetableName
-          existingStudentGroup.studentStreamID = studentGroup.studentStreamID
-          existingStudentGroup.studyForm = studentGroup.studyForm
-          existingStudentGroup.profiles = studentGroup.profiles
-          return existingStudentGroup.save(on: self.database).transform(to: ())
-        } else {
-          return self.database.future(())
-        }
-      }
+      return studentGroup.upsert(on: self.database, onConflict: \.timetableID)
+        .transform(to: ())
     }
   }
 
@@ -252,9 +230,7 @@ public final class TimetableDumper {
           timetableID: id
         )
 
-        return try educator
-          .createIfNeeded(on: self.database,
-                          conditions: \.timetableID == educator.timetableID)
+        return educator.upsert(on: self.database, onConflict: \.timetableID)
           .transform(to: ())
       }
     }
@@ -277,18 +253,7 @@ public final class TimetableDumper {
                           Fetched address "\(name)". Saving...
                           """)
 
-        return try address
-          .createIfNeeded(on: self.database, conditions: \.id == address.id)
-          .then { existingAddress, created in
-            if !created {
-              existingAddress.locationDescription = address.locationDescription
-              return existingAddress.save(on: self.database)
-            } else {
-              return self.database.future(existingAddress)
-            }
-          }.then { address in
-            return self.dumpClassrooms(for: address)
-          }
+        return address.upsert(on: self.database).then(self.dumpClassrooms)
       }
     }
   }
@@ -319,19 +284,9 @@ public final class TimetableDumper {
             addressID: address.requireID()
           )
 
-          return try classroom
-            .createIfNeeded(on: self.database, conditions: \.id == classroom.id)
-            .then { existingClassroom, created -> Future<Classroom> in
-              if !created {
-                existingClassroom.name = classroom.name
-                existingClassroom.capacity = classroom.capacity
-                existingClassroom.seating = classroom.seating
-                existingClassroom.additionalInfo = classroom.additionalInfo
-                return existingClassroom.save(on: self.database)
-              } else {
-                return self.database.future(existingClassroom)
-              }
-            }.transform(to: ())
+          return classroom
+            .create(orUpdate: true, on: self.database)
+            .transform(to: ())
         }
       }
   }

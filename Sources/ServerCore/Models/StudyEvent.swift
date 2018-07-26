@@ -8,7 +8,7 @@
 import Foundation
 import FluentPostgreSQL
 
-public final class StudyEvent: PostgreSQLModel, Timestampable {
+public final class StudyEvent: PostgreSQLModel {
 
   public static var createdAtKey: WritableKeyPath<StudyEvent, Date?> {
     return \.createdAt

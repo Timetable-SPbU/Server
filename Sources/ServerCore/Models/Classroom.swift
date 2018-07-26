@@ -58,11 +58,10 @@ extension Classroom: Migration {
   public static func prepare(on connection: Connection) -> Future<Void> {
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
-      try builder.addReference(from: \.addressID,
-                               to: \Address.id,
-                               actions: .update)
-    }.then { _ in
-      setCustomType(for: \Classroom.seating, on: connection)
+      builder.reference(from: \.addressID,
+                        to: \Address.id,
+                        onUpdate: .cascade,
+                        onDelete: .cascade)
     }
   }
 }

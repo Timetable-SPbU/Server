@@ -31,23 +31,17 @@ public final class StudentStream: PostgreSQLModel {
   public var studentGroups: Children<StudentStream, StudentGroup> {
     return children(\.studentStreamID)
   }
-
-  static let uniqueConstraint =
-    try! UniqueConstraint(\StudentStream.year, \StudentStream.specializationID)
 }
 
 extension StudentStream: Migration {
-
-  /// Runs this migration's changes on the database.
-  /// This is usually creating a table, or altering an existing one.
   public static func prepare(on connection: Connection) -> Future<Void> {
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
-      try builder.addReference(from: \.specializationID,
-                               to: \Specialization.id,
-                               actions: .update)
-    }.flatMap(to: Void.self) {
-      uniqueConstraint.activate(on: connection)
+      builder.reference(from: \.specializationID,
+                        to: \Specialization.id,
+                        onUpdate: .cascade,
+                        onDelete: .cascade)
+      builder.unique(on: \.year, \.specializationID)
     }
   }
 }

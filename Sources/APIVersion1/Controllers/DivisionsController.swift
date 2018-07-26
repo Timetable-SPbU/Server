@@ -15,7 +15,7 @@ typealias DivisionViewModel = SPbUappModelsV1.Division
 final class DivisionsController {
 
   func allDivisions(_ request: Request) throws -> Future<[DivisionViewModel]> {
-    return try Division.query(on: request).sort(\.id, .ascending).all()
+    return Division.query(on: request).sort(\.id, .ascending).all()
       .map { divisions in
 
         let language = request.preferredLanguage

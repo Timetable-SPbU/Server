@@ -11,8 +11,6 @@ public final class Address: PostgreSQLModel, Migration {
 
   public typealias UnderlyingID = UUID
 
-  public static var entity: String { return "addresses" }
-
   public var id: Identifier<Address>?
 
   public var name: String?

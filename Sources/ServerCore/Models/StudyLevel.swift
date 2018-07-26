@@ -35,21 +35,20 @@ public final class StudyLevel: PostgreSQLModel {
     self.timetableName = timetableName.cleanedUp()
     self.divisionTypes = divisionTypes
   }
-
-  static let uniqueConstraint = try! UniqueConstraint(\StudyLevel.timetableName)
 }
 
 extension StudyLevel: Migration {
 
-  /// Runs this migration's changes on the database.
-  /// This is usually creating a table, or altering an existing one.
   public static func prepare(on connection: Connection) -> Future<Void> {
     return Database.create(self, on: connection) { builder in
-      try addProperties(to: builder)
-    }.flatMap(to: Void.self) {
-      setCustomType(for: \.divisionTypes, on: connection)
-    }.flatMap(to: Void.self) {
-      uniqueConstraint.activate(on: connection)
+
+      builder.field(for: \.id, isIdentifier: true)
+      builder.field(for: \.name)
+      builder.field(for: \.nameEnglish)
+      builder.field(for: \.timetableName)
+      builder.field(for: \.divisionTypes)
+
+      builder.unique(on: \.timetableName)
     }
   }
 }

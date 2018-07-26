@@ -48,8 +48,6 @@ public final class StudentGroup: PostgreSQLModel {
   public var studentStream: Parent<StudentGroup, StudentStream> {
     return parent(\.studentStreamID)
   }
-
-  static let uniqueConstraint = try! UniqueConstraint(\StudentGroup.timetableID)
 }
 
 extension StudentGroup: Migration {
@@ -60,11 +58,11 @@ extension StudentGroup: Migration {
 
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
-      try builder.addReference(from: \.studentStreamID,
-                               to: \StudentStream.id,
-                               actions: .update)
-    }.flatMap(to: Void.self) {
-      uniqueConstraint.activate(on: connection)
+      builder.reference(from: \.studentStreamID,
+                        to: \StudentStream.id,
+                        onUpdate: .cascade,
+                        onDelete: .cascade)
+      builder.unique(on: \.timetableID)
     }
   }
 }

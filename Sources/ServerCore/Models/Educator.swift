@@ -42,21 +42,16 @@ public final class Educator: PostgreSQLModel {
     self.lastNameEnglish = lastNameEnglish
     self.timetableID = timetableID
   }
-
-  static let uniqueConstraint = try! UniqueConstraint(\Educator.timetableID)
 }
 
 extension Educator: Migration {
 
   /// Runs this migration's changes on the database.
   /// This is usually creating a table, or altering an existing one.
-  public static func prepare(
-    on connection: PostgreSQLConnection
-  ) -> Future<Void> {
+  public static func prepare(on connection: Connection) -> Future<Void> {
     return Database.create(self, on: connection) { builder in
       try addProperties(to: builder)
-    }.flatMap(to: Void.self) {
-      uniqueConstraint.activate(on: connection)
+      builder.unique(on: \.timetableID)
     }
   }
 }
