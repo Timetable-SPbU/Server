@@ -8,7 +8,8 @@
 import Fluent
 
 extension Siblings
-  where Through: ModifiablePivot,
+where Through:
+  ModifiablePivot,
   Through.Left == Base,
   Through.Right == Related,
   Through.Database: QuerySupporting {

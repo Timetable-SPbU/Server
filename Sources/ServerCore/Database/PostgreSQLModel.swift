@@ -12,7 +12,7 @@ import Vapor
 /// Reimplementation of `FluentPostgreSQL.PostgreSQLModel`
 /// with strongly typed ID.
 public protocol PostgreSQLModel: Model
-  where Self.Database == PostgreSQLDatabase {
+where Self.Database == PostgreSQLDatabase {
 
   typealias Connection = Database.Connection
 
@@ -128,11 +128,12 @@ extension PostgreSQLModel {
   }
 }
 
-public protocol PostgreSQLPivot: Pivot, PostgreSQLModel
-  where Left: PostgreSQLModel,
-        Right: PostgreSQLModel,
-        Left.ID == Identifier<Left>,
-        Right.ID == Identifier<Right> {}
+public protocol PostgreSQLPivot:
+  Pivot, PostgreSQLModel
+where Left: PostgreSQLModel,
+      Right: PostgreSQLModel,
+      Left.ID == Identifier<Left>,
+      Right.ID == Identifier<Right> {}
 
 extension PostgreSQLPivot {
 
@@ -147,8 +148,7 @@ extension PostgreSQLPivot {
                                to: \Right.id,
                                actions: .update)
     }.flatMap(to: Void.self) {
-      try UniqueConstraint<Self>(leftIDKey, rightIDKey)
-        .activate(on: connection)
+      try UniqueConstraint<Self>(leftIDKey, rightIDKey).activate(on: connection)
     }
   }
 

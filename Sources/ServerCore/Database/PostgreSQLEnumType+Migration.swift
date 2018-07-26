@@ -8,7 +8,7 @@
 import FluentPostgreSQL
 
 extension PostgreSQLEnumType
-  where Self: RawRepresentable, RawValue == String, Self: CaseIterable {
+where Self: RawRepresentable, RawValue == String, Self: CaseIterable {
 
   public static func convertFromPostgreSQLData(
     _ data: PostgreSQLData
